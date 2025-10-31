@@ -22,3 +22,6 @@ dependencies:
   # Utilidades
   uuid: ^4.2.1
   intl: ^0.18.1
+
+flutter:
+  uses-material-design: true
