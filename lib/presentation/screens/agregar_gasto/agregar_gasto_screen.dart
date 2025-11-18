@@ -13,6 +13,8 @@ import '../../../data/models/empresa_model.dart';
 import '../../../data/models/gasto_model.dart';
 import '../../../data/models/gasto_sugerencia_model.dart';
 import '../../../data/repositories/gastos_repository_impl.dart';
+import '../../../core/database/database_helper.dart';
+import '../../../data/models/configuracion_recurrencia_model.dart';
 import '../../bloc/categorias/categorias_bloc.dart';
 import '../../bloc/categorias/categorias_state.dart';
 import '../../bloc/empresas/empresas_bloc.dart';
@@ -20,6 +22,7 @@ import '../../bloc/empresas/empresas_event.dart';
 import '../../bloc/empresas/empresas_state.dart';
 import '../../bloc/gastos/gastos_bloc.dart';
 import '../../bloc/gastos/gastos_event.dart';
+import 'widgets/recurrencia_config_card.dart';
 import 'widgets/adjuntos_gallery.dart';
 
 class AgregarGastoScreen extends StatefulWidget {
@@ -40,6 +43,8 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   final _gastosRepository = GastosRepositoryImpl();
   final _imagePicker = ImagePicker();
 
+  final _databaseHelper = DatabaseHelper();
+
   CategoriaModel? _categoriaSeleccionada;
   EmpresaModel? _empresaSeleccionada;
   DateTime _fechaSeleccionada = DateTime.now();
@@ -50,6 +55,12 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   // ✨ NUEVO: Lista de adjuntos
   List<AdjuntoModel> _adjuntos = [];
   bool _cargandoAdjuntos = false;
+  // ✨ NUEVO: Variables para recurrencia
+  bool _esRecurrente = false;
+  FrecuenciaRecurrencia _frecuenciaRecurrente = FrecuenciaRecurrencia.MENSUAL;
+  int? _diaDelMes;
+  int? _diaSemana;
+  int? _intervaloCustom;
 
   @override
   void initState() {
@@ -463,6 +474,53 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
           await _gastosRepository.insertGasto(nuevoGasto);
         }
 
+        // ✨ NUEVO: Guardar configuración recurrente si aplica
+        // ✨ MODIFICADO: Guardar configuración recurrente si aplica
+        if (_esRecurrente) {
+          final configuracion = ConfiguracionRecurrenciaModel(
+            id: uuid.v4(),
+            nombreGasto: _nombreController.text.trim(),
+            importeBase: double.parse(_importeController.text),
+            categoriaId: _categoriaSeleccionada!.id,
+            empresaId: _empresaSeleccionada?.id,
+            frecuencia: _frecuenciaRecurrente,
+            intervaloCustom:
+                _frecuenciaRecurrente == FrecuenciaRecurrencia.CUSTOM
+                ? _intervaloCustom
+                : null,
+            diaDelMes:
+                (_frecuenciaRecurrente == FrecuenciaRecurrencia.MENSUAL ||
+                    _frecuenciaRecurrente == FrecuenciaRecurrencia.BIMENSUAL ||
+                    _frecuenciaRecurrente == FrecuenciaRecurrencia.ANUAL)
+                ? _diaDelMes
+                : null,
+            diaSemana: _frecuenciaRecurrente == FrecuenciaRecurrencia.SEMANAL
+                ? _diaSemana
+                : null,
+            fechaInicio: _fechaSeleccionada,
+            fechaFin: null,
+            notificarDiasDespues: 1,
+            activa: true,
+            notasPlantilla: _notasController.text.trim().isEmpty
+                ? null
+                : _notasController.text.trim(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          try {
+            // Guardar configuración en BD
+            await _databaseHelper.insertConfiguracionRecurrencia(
+              configuracion.toMap(),
+            );
+
+            // TODO: Generar primera instancia (lo haremos en el siguiente paso)
+          } catch (e) {
+            print('Error al guardar configuración recurrente: $e');
+            // No bloqueamos el guardado del gasto si falla la recurrencia
+          }
+        }
+
         // ✨ AHORA SÍ: Guardar adjuntos nuevos (el gasto ya existe en BD)
         for (var adjunto in _adjuntos) {
           if (adjunto.gastoId == 'temporal') {
@@ -800,6 +858,43 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               ),
               maxLines: 3,
             ),
+
+            SizedBox(height: 16),
+
+            // ✨ NUEVO: Toggle de recurrencia
+            SwitchListTile(
+              title: Text(
+                '¿Es un gasto recurrente?',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Se creará automáticamente cada período',
+                style: TextStyle(fontSize: 12),
+              ),
+              value: _esRecurrente,
+              onChanged: (value) {
+                setState(() {
+                  _esRecurrente = value;
+                });
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+
+            // ✨ NUEVO: Card de configuración de recurrencia
+            // ✨ MODIFICADO: Card de configuración de recurrencia
+            if (_esRecurrente)
+              RecurrenciaConfigCard(
+                fechaGasto: _fechaSeleccionada,
+                onConfigChanged:
+                    (frecuencia, diaDelMes, diaSemana, intervaloCustom) {
+                      setState(() {
+                        _frecuenciaRecurrente = frecuencia;
+                        _diaDelMes = diaDelMes;
+                        _diaSemana = diaSemana;
+                        _intervaloCustom = intervaloCustom;
+                      });
+                    },
+              ),
             SizedBox(height: 24),
 
             // ✨ NUEVO: Galería de adjuntos

@@ -4,6 +4,7 @@ import '../models/gasto_model.dart';
 import '../models/gasto_con_detalles_model.dart';
 import '../models/gasto_sugerencia_model.dart';
 import '../models/adjunto_model.dart';
+import '../models/analisis_categoria_model.dart';
 
 /// Implementación del repositorio de Gastos
 class GastosRepositoryImpl implements GastosRepository {
@@ -178,6 +179,67 @@ class GastosRepositoryImpl implements GastosRepository {
       }
     } catch (e) {
       throw Exception('Error al eliminar adjunto: $e');
+    }
+  }
+
+  @override
+  Future<List<AnalisisCategoriaModel>> getAnalisisPorCategoriaMes(
+    int mes,
+    int anio,
+  ) async {
+    try {
+      final analisisMap = await _databaseHelper.getAnalisisPorCategoriaMes(
+        mes,
+        anio,
+      );
+      return analisisMap
+          .map((map) => AnalisisCategoriaModel.fromMap(map))
+          .toList();
+    } catch (e) {
+      throw Exception('Error al obtener análisis por categoría: $e');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAnalisisPorMesAnio(int anio) async {
+    try {
+      return await _databaseHelper.getAnalisisPorMesAnio(anio);
+    } catch (e) {
+      throw Exception('Error al obtener análisis por mes: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getMayorGastoMes(int mes, int anio) async {
+    try {
+      return await _databaseHelper.getMayorGastoMes(mes, anio);
+    } catch (e) {
+      throw Exception('Error al obtener mayor gasto: $e');
+    }
+  }
+
+  @override
+  Future<List<GastoConDetallesModel>> buscarGastosConFiltros({
+    String? textoBusqueda,
+    String? categoriaId,
+    String? empresaId,
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+  }) async {
+    try {
+      final resultados = await _databaseHelper.buscarGastosConFiltros(
+        textoBusqueda: textoBusqueda,
+        categoriaId: categoriaId,
+        empresaId: empresaId,
+        fechaDesde: fechaDesde,
+        fechaHasta: fechaHasta,
+      );
+
+      return resultados
+          .map((map) => GastoConDetallesModel.fromMap(map))
+          .toList();
+    } catch (e) {
+      throw Exception('Error al buscar gastos: $e');
     }
   }
 }

@@ -7,6 +7,8 @@ import '../../bloc/gastos/gastos_event.dart';
 import '../../bloc/gastos/gastos_state.dart';
 import '../agregar_gasto/agregar_gasto_screen.dart';
 import '../configuracion/configuracion_screen.dart';
+import '../analisis/analisis_screen.dart';
+import '../busqueda/busqueda_screen.dart';
 import 'widgets/gasto_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -75,6 +77,15 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('Expenser'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => BusquedaScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.settings),
             onPressed: () {
@@ -259,6 +270,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Center(child: Text('Estado inicial'));
               },
             ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AnalisisScreen()),
+            );
+          }
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Gastos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Análisis',
           ),
         ],
       ),

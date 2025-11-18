@@ -9,13 +9,16 @@ class DatabaseHelper {
 
   // Constantes de la base de datos
   static const String _databaseName = 'gestor_gastos.db';
-  static const int _databaseVersion = 1; // ✨ CAMBIO: Incrementar versión
+  static const int _databaseVersion = 1;
 
   // Nombres de tablas
   static const String tableCategorias = 'categorias';
   static const String tableEmpresas = 'empresas';
   static const String tableGastos = 'gastos';
-  static const String tableAdjuntos = 'adjuntos'; // ✨ NUEVO
+  static const String tableAdjuntos = 'adjuntos';
+  static const String tableConfiguracionesRecurrencia =
+      'configuraciones_recurrencia';
+  static const String tableInstanciasRecurrentes = 'instancias_recurrentes';
 
   factory DatabaseHelper() => _instance;
 
@@ -125,6 +128,58 @@ class DatabaseHelper {
       CREATE INDEX idx_adjuntos_gasto ON $tableAdjuntos(gasto_id)
     ''');
 
+    // ✨ NUEVO: Tabla: configuraciones_recurrencia
+    await db.execute('''
+      CREATE TABLE $tableConfiguracionesRecurrencia (
+        id TEXT PRIMARY KEY,
+        nombre_gasto TEXT NOT NULL,
+        importe_base REAL NOT NULL,
+        categoria_id TEXT NOT NULL,
+        empresa_id TEXT,
+        frecuencia TEXT NOT NULL,
+        intervalo_custom INTEGER,
+        dia_del_mes INTEGER,
+        dia_semana INTEGER,
+        fecha_inicio INTEGER NOT NULL,
+        fecha_fin INTEGER,
+        notificar_dias_despues INTEGER NOT NULL DEFAULT 1,
+        activa INTEGER NOT NULL DEFAULT 1,
+        notas_plantilla TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (categoria_id) REFERENCES $tableCategorias(id) ON DELETE CASCADE,
+        FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id) ON DELETE SET NULL
+      )
+    ''');
+
+    // ✨ NUEVO: Tabla: instancias_recurrentes
+    await db.execute('''
+      CREATE TABLE $tableInstanciasRecurrentes (
+        id TEXT PRIMARY KEY,
+        configuracion_recurrencia_id TEXT NOT NULL,
+        fecha_esperada INTEGER NOT NULL,
+        fecha_notificacion INTEGER NOT NULL,
+        fecha_confirmacion INTEGER,
+        gasto_id TEXT,
+        importe_real REAL,
+        estado TEXT NOT NULL,
+        intentos_notificacion INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (configuracion_recurrencia_id) REFERENCES $tableConfiguracionesRecurrencia(id) ON DELETE CASCADE,
+        FOREIGN KEY (gasto_id) REFERENCES $tableGastos(id) ON DELETE SET NULL
+      )
+    ''');
+
+    // ✨ NUEVO: Índices para instancias recurrentes
+    await db.execute('''
+      CREATE INDEX idx_instancias_estado ON $tableInstanciasRecurrentes(estado)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_instancias_fecha_notif ON $tableInstanciasRecurrentes(fecha_notificacion)
+    ''');
+
     // Insertar categorías iniciales
     await _insertSeedData(db);
   }
@@ -148,6 +203,58 @@ class DatabaseHelper {
 
       await db.execute('''
         CREATE INDEX idx_adjuntos_gasto ON $tableAdjuntos(gasto_id)
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      // Agregar tablas de recurrencia
+      await db.execute('''
+        CREATE TABLE $tableConfiguracionesRecurrencia (
+          id TEXT PRIMARY KEY,
+          nombre_gasto TEXT NOT NULL,
+          importe_base REAL NOT NULL,
+          categoria_id TEXT NOT NULL,
+          empresa_id TEXT,
+          frecuencia TEXT NOT NULL,
+          intervalo_custom INTEGER,
+          dia_del_mes INTEGER,
+          dia_semana INTEGER,
+          fecha_inicio INTEGER NOT NULL,
+          fecha_fin INTEGER,
+          notificar_dias_despues INTEGER NOT NULL DEFAULT 1,
+          activa INTEGER NOT NULL DEFAULT 1,
+          notas_plantilla TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (categoria_id) REFERENCES $tableCategorias(id) ON DELETE CASCADE,
+          FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id) ON DELETE SET NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE $tableInstanciasRecurrentes (
+          id TEXT PRIMARY KEY,
+          configuracion_recurrencia_id TEXT NOT NULL,
+          fecha_esperada INTEGER NOT NULL,
+          fecha_notificacion INTEGER NOT NULL,
+          fecha_confirmacion INTEGER,
+          gasto_id TEXT,
+          importe_real REAL,
+          estado TEXT NOT NULL,
+          intentos_notificacion INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (configuracion_recurrencia_id) REFERENCES $tableConfiguracionesRecurrencia(id) ON DELETE CASCADE,
+          FOREIGN KEY (gasto_id) REFERENCES $tableGastos(id) ON DELETE SET NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_instancias_estado ON $tableInstanciasRecurrentes(estado)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_instancias_fecha_notif ON $tableInstanciasRecurrentes(fecha_notificacion)
       ''');
     }
   }
@@ -526,5 +633,331 @@ class DatabaseHelper {
     final path = join(databasesPath, _databaseName);
     await databaseFactory.deleteDatabase(path);
     _database = null;
+  }
+
+  // ============================================================
+  // ✨ NUEVOS: MÉTODOS PARA ANÁLISIS
+  // ============================================================
+
+  /// Obtiene el análisis de gastos por categoría de un mes
+  Future<List<Map<String, dynamic>>> getAnalisisPorCategoriaMes(
+    int mes,
+    int anio,
+  ) async {
+    final db = await database;
+
+    final inicioMes = DateTime(anio, mes, 1).millisecondsSinceEpoch;
+    final finMes = DateTime(
+      anio,
+      mes + 1,
+      0,
+      23,
+      59,
+      59,
+    ).millisecondsSinceEpoch;
+
+    return await db.rawQuery(
+      '''
+      SELECT 
+        c.id as categoria_id,
+        c.nombre as categoria_nombre,
+        c.icono as categoria_icono,
+        c.color as categoria_color,
+        SUM(g.importe) as total_gastado,
+        COUNT(g.id) as cantidad_gastos
+      FROM $tableGastos g
+      INNER JOIN $tableCategorias c ON g.categoria_id = c.id
+      WHERE g.fecha >= ? AND g.fecha <= ?
+      GROUP BY c.id, c.nombre, c.icono, c.color
+      ORDER BY total_gastado DESC
+    ''',
+      [inicioMes, finMes],
+    );
+  }
+
+  /// Obtiene el análisis de gastos por mes de un año
+  Future<List<Map<String, dynamic>>> getAnalisisPorMesAnio(int anio) async {
+    final db = await database;
+
+    final inicioAnio = DateTime(anio, 1, 1).millisecondsSinceEpoch;
+    final finAnio = DateTime(anio, 12, 31, 23, 59, 59).millisecondsSinceEpoch;
+
+    // Crear una lista de todos los meses del año
+    final List<Map<String, dynamic>> resultado = [];
+
+    for (int mes = 1; mes <= 12; mes++) {
+      final inicioMes = DateTime(anio, mes, 1).millisecondsSinceEpoch;
+      final finMes = DateTime(
+        anio,
+        mes + 1,
+        0,
+        23,
+        59,
+        59,
+      ).millisecondsSinceEpoch;
+
+      final result = await db.rawQuery(
+        '''
+        SELECT COALESCE(SUM(importe), 0) as total
+        FROM $tableGastos
+        WHERE fecha >= ? AND fecha <= ?
+      ''',
+        [inicioMes, finMes],
+      );
+
+      resultado.add({
+        'mes': mes,
+        'anio': anio,
+        'total': (result.first['total'] as num).toDouble(),
+      });
+    }
+
+    return resultado;
+  }
+
+  /// Obtiene el gasto más alto de un mes
+  Future<Map<String, dynamic>?> getMayorGastoMes(int mes, int anio) async {
+    final db = await database;
+
+    final inicioMes = DateTime(anio, mes, 1).millisecondsSinceEpoch;
+    final finMes = DateTime(
+      anio,
+      mes + 1,
+      0,
+      23,
+      59,
+      59,
+    ).millisecondsSinceEpoch;
+
+    final result = await db.rawQuery(
+      '''
+      SELECT 
+        g.*,
+        c.nombre as categoria_nombre
+      FROM $tableGastos g
+      INNER JOIN $tableCategorias c ON g.categoria_id = c.id
+      WHERE g.fecha >= ? AND g.fecha <= ?
+      ORDER BY g.importe DESC
+      LIMIT 1
+    ''',
+      [inicioMes, finMes],
+    );
+
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  // ============================================================
+  // ✨ NUEVOS: MÉTODOS PARA BÚSQUEDA Y FILTROS
+  // ============================================================
+
+  /// Busca gastos con filtros avanzados
+  Future<List<Map<String, dynamic>>> buscarGastosConFiltros({
+    String? textoBusqueda,
+    String? categoriaId,
+    String? empresaId,
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+  }) async {
+    final db = await database;
+
+    // Construir query dinámicamente
+    String query =
+        '''
+      SELECT 
+        g.*,
+        c.nombre as categoria_nombre,
+        e.nombre as empresa_nombre
+      FROM $tableGastos g
+      INNER JOIN $tableCategorias c ON g.categoria_id = c.id
+      LEFT JOIN $tableEmpresas e ON g.empresa_id = e.id
+      WHERE 1=1
+    ''';
+
+    List<dynamic> args = [];
+
+    // Filtro de texto (busca en nombre y notas)
+    if (textoBusqueda != null && textoBusqueda.isNotEmpty) {
+      query += ' AND (g.nombre LIKE ? OR g.notas LIKE ?)';
+      args.add('%$textoBusqueda%');
+      args.add('%$textoBusqueda%');
+    }
+
+    // Filtro de categoría
+    if (categoriaId != null) {
+      query += ' AND g.categoria_id = ?';
+      args.add(categoriaId);
+    }
+
+    // Filtro de empresa
+    if (empresaId != null) {
+      query += ' AND g.empresa_id = ?';
+      args.add(empresaId);
+    }
+
+    // Filtro de fecha desde
+    if (fechaDesde != null) {
+      query += ' AND g.fecha >= ?';
+      args.add(fechaDesde.millisecondsSinceEpoch);
+    }
+
+    // Filtro de fecha hasta
+    if (fechaHasta != null) {
+      query += ' AND g.fecha <= ?';
+      args.add(fechaHasta.millisecondsSinceEpoch);
+    }
+
+    query += ' ORDER BY g.fecha DESC, g.created_at DESC';
+
+    return await db.rawQuery(query, args);
+  }
+
+  // ============================================================
+  // ✨ NUEVOS: MÉTODOS CRUD PARA CONFIGURACIONES RECURRENTES
+  // ============================================================
+
+  /// Obtiene todas las configuraciones de recurrencia activas
+  Future<List<Map<String, dynamic>>> getAllConfiguracionesRecurrencia({
+    bool soloActivas = false,
+  }) async {
+    final db = await database;
+    String where = soloActivas ? 'activa = 1' : '';
+    return await db.query(
+      tableConfiguracionesRecurrencia,
+      where: where.isEmpty ? null : where,
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  /// Obtiene una configuración por ID
+  Future<Map<String, dynamic>?> getConfiguracionRecurrenciaById(
+    String id,
+  ) async {
+    final db = await database;
+    final results = await db.query(
+      tableConfiguracionesRecurrencia,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+
+  /// Inserta una nueva configuración de recurrencia
+  Future<int> insertConfiguracionRecurrencia(
+    Map<String, dynamic> configuracion,
+  ) async {
+    final db = await database;
+    return await db.insert(tableConfiguracionesRecurrencia, configuracion);
+  }
+
+  /// Actualiza una configuración de recurrencia
+  Future<int> updateConfiguracionRecurrencia(
+    Map<String, dynamic> configuracion,
+  ) async {
+    final db = await database;
+    return await db.update(
+      tableConfiguracionesRecurrencia,
+      configuracion,
+      where: 'id = ?',
+      whereArgs: [configuracion['id']],
+    );
+  }
+
+  /// Elimina una configuración de recurrencia
+  Future<int> deleteConfiguracionRecurrencia(String id) async {
+    final db = await database;
+    return await db.delete(
+      tableConfiguracionesRecurrencia,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // ============================================================
+  // ✨ NUEVOS: MÉTODOS CRUD PARA INSTANCIAS RECURRENTES
+  // ============================================================
+
+  /// Obtiene todas las instancias de una configuración
+  Future<List<Map<String, dynamic>>> getInstanciasPorConfiguracion(
+    String configuracionId,
+  ) async {
+    final db = await database;
+    return await db.query(
+      tableInstanciasRecurrentes,
+      where: 'configuracion_recurrencia_id = ?',
+      whereArgs: [configuracionId],
+      orderBy: 'fecha_esperada DESC',
+    );
+  }
+
+  /// Obtiene instancias pendientes que deben notificarse hoy
+  Future<List<Map<String, dynamic>>> getInstanciasPendientesHoy() async {
+    final db = await database;
+    final hoy = DateTime.now();
+    final inicioDia = DateTime(
+      hoy.year,
+      hoy.month,
+      hoy.day,
+    ).millisecondsSinceEpoch;
+    final finDia = DateTime(
+      hoy.year,
+      hoy.month,
+      hoy.day,
+      23,
+      59,
+      59,
+    ).millisecondsSinceEpoch;
+
+    return await db.query(
+      tableInstanciasRecurrentes,
+      where:
+          'estado = ? AND fecha_notificacion >= ? AND fecha_notificacion <= ?',
+      whereArgs: ['PENDIENTE', inicioDia, finDia],
+      orderBy: 'fecha_notificacion ASC',
+    );
+  }
+
+  /// Obtiene instancias que necesitan re-notificación (intentos < 3)
+  Future<List<Map<String, dynamic>>> getInstanciasParaRenotificacion() async {
+    final db = await database;
+    final hoy = DateTime.now();
+    final dosDiasAtras = hoy.subtract(Duration(days: 2)).millisecondsSinceEpoch;
+
+    return await db.query(
+      tableInstanciasRecurrentes,
+      where:
+          'estado = ? AND intentos_notificacion > 0 AND intentos_notificacion < 3 AND updated_at <= ?',
+      whereArgs: ['PENDIENTE', dosDiasAtras],
+    );
+  }
+
+  /// Inserta una nueva instancia recurrente
+  Future<int> insertInstanciaRecurrente(Map<String, dynamic> instancia) async {
+    final db = await database;
+    return await db.insert(tableInstanciasRecurrentes, instancia);
+  }
+
+  /// Actualiza una instancia recurrente
+  Future<int> updateInstanciaRecurrente(Map<String, dynamic> instancia) async {
+    final db = await database;
+    return await db.update(
+      tableInstanciasRecurrentes,
+      instancia,
+      where: 'id = ?',
+      whereArgs: [instancia['id']],
+    );
+  }
+
+  /// Marca instancias con 3+ intentos como SALTADA
+  Future<int> marcarInstanciasVencidasComoSaltadas() async {
+    final db = await database;
+    return await db.update(
+      tableInstanciasRecurrentes,
+      {
+        'estado': 'SALTADA',
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'intentos_notificacion >= 3 AND estado = ?',
+      whereArgs: ['PENDIENTE'],
+    );
   }
 }

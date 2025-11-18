@@ -2,6 +2,7 @@ import '../../data/models/gasto_model.dart';
 import '../../data/models/gasto_con_detalles_model.dart';
 import '../../data/models/gasto_sugerencia_model.dart';
 import '../../data/models/adjunto_model.dart';
+import '../../data/models/analisis_categoria_model.dart';
 
 /// Contrato del repositorio de Gastos
 abstract class GastosRepository {
@@ -46,4 +47,25 @@ abstract class GastosRepository {
 
   /// Elimina un adjunto
   Future<void> deleteAdjunto(String id);
+
+  /// Obtiene el análisis por categoría de un mes
+  Future<List<AnalisisCategoriaModel>> getAnalisisPorCategoriaMes(
+    int mes,
+    int anio,
+  );
+
+  /// Obtiene el análisis por mes de un año
+  Future<List<Map<String, dynamic>>> getAnalisisPorMesAnio(int anio);
+
+  /// Obtiene el mayor gasto de un mes
+  Future<Map<String, dynamic>?> getMayorGastoMes(int mes, int anio);
+
+  /// Busca gastos con filtros avanzados
+  Future<List<GastoConDetallesModel>> buscarGastosConFiltros({
+    String? textoBusqueda,
+    String? categoriaId,
+    String? empresaId,
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+  });
 }
