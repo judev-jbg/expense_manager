@@ -6,6 +6,7 @@ import '../../bloc/gastos/gastos_bloc.dart';
 import '../../bloc/gastos/gastos_event.dart';
 import '../../bloc/gastos/gastos_state.dart';
 import '../agregar_gasto/agregar_gasto_screen.dart';
+import '../configuracion/configuracion_screen.dart';
 import 'widgets/gasto_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -70,7 +71,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Gestor de Gastos'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('Expenser'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ConfiguracionScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // Selector de mes

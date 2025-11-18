@@ -1,5 +1,7 @@
 import '../../data/models/gasto_model.dart';
 import '../../data/models/gasto_con_detalles_model.dart';
+import '../../data/models/gasto_sugerencia_model.dart';
+import '../../data/models/adjunto_model.dart';
 
 /// Contrato del repositorio de Gastos
 abstract class GastosRepository {
@@ -32,4 +34,16 @@ abstract class GastosRepository {
 
   /// Calcula el total gastado en un mes
   Future<double> getTotalMes(int mes, int anio);
+
+  /// Busca sugerencias de gastos para autocompletado
+  Future<List<GastoSugerenciaModel>> buscarSugerencias(String query);
+
+  /// Obtiene todos los adjuntos de un gasto
+  Future<List<AdjuntoModel>> getAdjuntosPorGasto(String gastoId);
+
+  /// Inserta un nuevo adjunto
+  Future<void> insertAdjunto(AdjuntoModel adjunto);
+
+  /// Elimina un adjunto
+  Future<void> deleteAdjunto(String id);
 }

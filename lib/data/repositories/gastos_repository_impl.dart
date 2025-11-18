@@ -2,6 +2,8 @@ import '../../core/database/database_helper.dart';
 import '../../domain/repositories/gastos_repository.dart';
 import '../models/gasto_model.dart';
 import '../models/gasto_con_detalles_model.dart';
+import '../models/gasto_sugerencia_model.dart';
+import '../models/adjunto_model.dart';
 
 /// Implementación del repositorio de Gastos
 class GastosRepositoryImpl implements GastosRepository {
@@ -130,6 +132,52 @@ class GastosRepositoryImpl implements GastosRepository {
       return await _databaseHelper.getTotalMes(mes, anio);
     } catch (e) {
       throw Exception('Error al calcular total del mes: $e');
+    }
+  }
+
+  @override
+  Future<List<GastoSugerenciaModel>> buscarSugerencias(String query) async {
+    try {
+      if (query.trim().isEmpty) {
+        return [];
+      }
+
+      final results = await _databaseHelper.buscarNombresGastos(query);
+
+      return results.map((map) => GastoSugerenciaModel.fromMap(map)).toList();
+    } catch (e) {
+      throw Exception('Error al buscar sugerencias: $e');
+    }
+  }
+
+  @override
+  Future<List<AdjuntoModel>> getAdjuntosPorGasto(String gastoId) async {
+    try {
+      final adjuntosMap = await _databaseHelper.getAdjuntosPorGasto(gastoId);
+      return adjuntosMap.map((map) => AdjuntoModel.fromMap(map)).toList();
+    } catch (e) {
+      throw Exception('Error al obtener adjuntos: $e');
+    }
+  }
+
+  @override
+  Future<void> insertAdjunto(AdjuntoModel adjunto) async {
+    try {
+      await _databaseHelper.insertAdjunto(adjunto.toMap());
+    } catch (e) {
+      throw Exception('Error al insertar adjunto: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteAdjunto(String id) async {
+    try {
+      final result = await _databaseHelper.deleteAdjunto(id);
+      if (result == 0) {
+        throw Exception('No se encontró el adjunto para eliminar');
+      }
+    } catch (e) {
+      throw Exception('Error al eliminar adjunto: $e');
     }
   }
 }

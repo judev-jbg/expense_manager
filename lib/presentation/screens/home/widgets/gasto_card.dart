@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../agregar_gasto/agregar_gasto_screen.dart';
 import '../../../../data/models/gasto_con_detalles_model.dart';
 import '../../../bloc/gastos/gastos_bloc.dart';
 import '../../../bloc/gastos/gastos_event.dart';
+import '../../../../data/repositories/gastos_repository_impl.dart';
 
 class GastoCard extends StatelessWidget {
   final GastoConDetallesModel gastoConDetalles;
@@ -22,9 +24,50 @@ class GastoCard extends StatelessWidget {
           backgroundColor: Colors.blue.shade100,
           child: Icon(Icons.receipt, color: Colors.blue.shade700),
         ),
-        title: Text(
-          gasto.nombre,
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                gasto.nombre,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            // ✨ NUEVO: Indicador de adjuntos
+            FutureBuilder<int>(
+              future: _contarAdjuntos(gasto.id),
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data! > 0) {
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.attach_file,
+                          size: 12,
+                          color: Colors.blue.shade700,
+                        ),
+                        SizedBox(width: 2),
+                        Text(
+                          '${snapshot.data}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SizedBox.shrink();
+              },
+            ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,12 +107,30 @@ class GastoCard extends StatelessWidget {
             ),
           ],
         ),
+        onTap: () async {
+          final resultado = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AgregarGastoScreen(gastoParaEditar: gasto),
+            ),
+          );
+        },
         onLongPress: () {
-          // Mostrar diálogo de confirmación para eliminar
           _mostrarDialogoEliminar(context, gasto.id);
         },
       ),
     );
+  }
+
+  // ✨ NUEVO: Contar adjuntos
+  Future<int> _contarAdjuntos(String gastoId) async {
+    try {
+      final repository = GastosRepositoryImpl();
+      final adjuntos = await repository.getAdjuntosPorGasto(gastoId);
+      return adjuntos.length;
+    } catch (e) {
+      return 0;
+    }
   }
 
   void _mostrarDialogoEliminar(BuildContext context, String gastoId) {
@@ -86,7 +147,6 @@ class GastoCard extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                // Eliminar el gasto usando el Bloc del contexto original
                 context.read<GastosBloc>().add(DeleteGasto(id: gastoId));
                 Navigator.of(dialogContext).pop();
               },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'data/repositories/categorias_repository_impl.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'data/repositories/empresas_repository_impl.dart';
 import 'data/repositories/gastos_repository_impl.dart';
 import 'presentation/bloc/categorias/categorias_bloc.dart';
@@ -43,6 +44,13 @@ class MyApp extends StatelessWidget {
         title: 'Gestor Gastos',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [Locale('es', 'ES'), Locale('en', 'US')],
+        locale: Locale('es', 'ES'),
         home: HomeScreen(),
       ),
     );

@@ -9,12 +9,13 @@ class DatabaseHelper {
 
   // Constantes de la base de datos
   static const String _databaseName = 'gestor_gastos.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 1; // ✨ CAMBIO: Incrementar versión
 
   // Nombres de tablas
   static const String tableCategorias = 'categorias';
   static const String tableEmpresas = 'empresas';
   static const String tableGastos = 'gastos';
+  static const String tableAdjuntos = 'adjuntos'; // ✨ NUEVO
 
   factory DatabaseHelper() => _instance;
 
@@ -37,6 +38,7 @@ class DatabaseHelper {
       version: _databaseVersion,
       onCreate: _onCreate,
       onConfigure: _onConfigure,
+      onUpgrade: _onUpgrade, // ✨ NUEVO: Manejar migraciones
     );
   }
 
@@ -86,8 +88,22 @@ class DatabaseHelper {
         notas TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
-        FOREIGN KEY (categoria_id) REFERENCES $tableCategorias(id),
-        FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id)
+        FOREIGN KEY (categoria_id) REFERENCES $tableCategorias(id) ON DELETE CASCADE,
+        FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id) ON DELETE SET NULL
+      )
+    ''');
+
+    // ✨ NUEVO: Tabla: adjuntos
+    await db.execute('''
+      CREATE TABLE $tableAdjuntos (
+        id TEXT PRIMARY KEY,
+        gasto_id TEXT NOT NULL,
+        ruta_local TEXT NOT NULL,
+        tipo TEXT NOT NULL,
+        nombre_archivo TEXT NOT NULL,
+        tamanio INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (gasto_id) REFERENCES $tableGastos(id) ON DELETE CASCADE
       )
     ''');
 
@@ -104,8 +120,36 @@ class DatabaseHelper {
       CREATE INDEX idx_gastos_nombre ON $tableGastos(nombre)
     ''');
 
+    // ✨ NUEVO: Índice para adjuntos
+    await db.execute('''
+      CREATE INDEX idx_adjuntos_gasto ON $tableAdjuntos(gasto_id)
+    ''');
+
     // Insertar categorías iniciales
     await _insertSeedData(db);
+  }
+
+  // ✨ NUEVO: Manejar migración de versión 1 a versión 2
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Agregar tabla de adjuntos
+      await db.execute('''
+        CREATE TABLE $tableAdjuntos (
+          id TEXT PRIMARY KEY,
+          gasto_id TEXT NOT NULL,
+          ruta_local TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          nombre_archivo TEXT NOT NULL,
+          tamanio INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (gasto_id) REFERENCES $tableGastos(id) ON DELETE CASCADE
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_adjuntos_gasto ON $tableAdjuntos(gasto_id)
+      ''');
+    }
   }
 
   /// Inserta las categorías predefinidas
@@ -425,8 +469,44 @@ class DatabaseHelper {
       [inicioMes, finMes],
     );
 
-    final total = result.first['total'];
-    return (total as num).toDouble();
+    return (result.first['total'] as num).toDouble();
+  }
+
+  // ============================================================
+  // ✨ NUEVOS: MÉTODOS CRUD PARA ADJUNTOS
+  // ============================================================
+
+  /// Obtiene todos los adjuntos de un gasto
+  Future<List<Map<String, dynamic>>> getAdjuntosPorGasto(String gastoId) async {
+    final db = await database;
+    return await db.query(
+      tableAdjuntos,
+      where: 'gasto_id = ?',
+      whereArgs: [gastoId],
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  /// Inserta un nuevo adjunto
+  Future<int> insertAdjunto(Map<String, dynamic> adjunto) async {
+    final db = await database;
+    return await db.insert(tableAdjuntos, adjunto);
+  }
+
+  /// Elimina un adjunto
+  Future<int> deleteAdjunto(String id) async {
+    final db = await database;
+    return await db.delete(tableAdjuntos, where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Elimina todos los adjuntos de un gasto
+  Future<int> deleteAdjuntosPorGasto(String gastoId) async {
+    final db = await database;
+    return await db.delete(
+      tableAdjuntos,
+      where: 'gasto_id = ?',
+      whereArgs: [gastoId],
+    );
   }
 
   // ============================================================
