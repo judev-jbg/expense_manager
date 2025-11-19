@@ -140,7 +140,7 @@ class _EmpresaFormDialogState extends State<EmpresaFormDialog> {
                   builder: (context, state) {
                     if (state is CategoriasLoaded) {
                       return DropdownButtonFormField<CategoriaModel>(
-                        value: _categoriaSeleccionada,
+                        initialValue: _categoriaSeleccionada,
                         decoration: InputDecoration(
                           labelText: 'Categoría *',
                           border: OutlineInputBorder(),

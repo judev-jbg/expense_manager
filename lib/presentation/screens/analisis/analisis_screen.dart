@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'vista_mensual_tab.dart';
 import 'vista_anual_tab.dart';
+import '../recurrentes/recurrentes_screen.dart';
 
 class AnalisisScreen extends StatelessWidget {
   @override
@@ -24,6 +25,11 @@ class AnalisisScreen extends StatelessWidget {
           onTap: (index) {
             if (index == 0) {
               Navigator.pop(context);
+            } else if (index == 2) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => RecurrentesScreen()),
+              );
             }
           },
           items: [
@@ -34,6 +40,10 @@ class AnalisisScreen extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics),
               label: 'Análisis',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.repeat),
+              label: 'Recurrentes',
             ),
           ],
         ),

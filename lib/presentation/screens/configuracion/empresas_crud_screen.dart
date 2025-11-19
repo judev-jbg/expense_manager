@@ -133,7 +133,7 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    value: _categoriaFiltroId,
+                    initialValue: _categoriaFiltroId,
                     decoration: InputDecoration(
                       labelText: 'Filtrar por categoría',
                       border: OutlineInputBorder(),

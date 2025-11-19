@@ -89,10 +89,12 @@ class DatabaseHelper {
         categoria_id TEXT NOT NULL,
         empresa_id TEXT,
         notas TEXT,
+        configuracion_recurrencia_id TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (categoria_id) REFERENCES $tableCategorias(id) ON DELETE CASCADE,
-        FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id) ON DELETE SET NULL
+        FOREIGN KEY (empresa_id) REFERENCES $tableEmpresas(id) ON DELETE SET NULL,
+        FOREIGN KEY (configuracion_recurrencia_id) REFERENCES $tableConfiguracionesRecurrencia(id) ON DELETE SET NULL
       )
     ''');
 
@@ -255,6 +257,13 @@ class DatabaseHelper {
 
       await db.execute('''
         CREATE INDEX idx_instancias_fecha_notif ON $tableInstanciasRecurrentes(fecha_notificacion)
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      // Agregar campo configuracion_recurrencia_id a la tabla gastos
+      await db.execute('''
+        ALTER TABLE $tableGastos ADD COLUMN configuracion_recurrencia_id TEXT
       ''');
     }
   }

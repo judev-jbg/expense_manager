@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class YearlySummaryCard extends StatelessWidget {
   final double totalAnio;

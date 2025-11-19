@@ -21,8 +21,20 @@ class GastoCard extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade100,
-          child: Icon(Icons.receipt, color: Colors.blue.shade700),
+          backgroundColor: gasto.configuracionRecurrenciaId != null
+              ? Colors
+                    .orange
+                    .shade100 // ✨ NUEVO: Naranja si es recurrente
+              : Colors.blue.shade100,
+          child: Icon(
+            gasto.configuracionRecurrenciaId != null
+                ? Icons
+                      .repeat // ✨ NUEVO: Icono de repeat si es recurrente
+                : Icons.receipt,
+            color: gasto.configuracionRecurrenciaId != null
+                ? Colors.orange.shade700
+                : Colors.blue.shade700,
+          ),
         ),
         title: Row(
           children: [

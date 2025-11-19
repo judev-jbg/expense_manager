@@ -9,10 +9,38 @@ import 'presentation/bloc/categorias/categorias_event.dart';
 import 'presentation/bloc/empresas/empresas_bloc.dart';
 import 'presentation/bloc/gastos/gastos_bloc.dart';
 import 'presentation/screens/home/home_screen.dart';
+import 'presentation/screens/recurrentes/confirmar_instancia_screen.dart';
+import 'domain/services/notification_service.dart';
+import 'domain/services/recurrentes_background_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('es_ES', null);
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  NotificationService.onNotificationTap = (instanciaId) {
+    print('🚀 Navegando a confirmación: $instanciaId');
 
+    // Esperar un frame para asegurar que el navigator está listo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (navigatorKey.currentState != null) {
+        navigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) =>
+                ConfirmarInstanciaScreen(instanciaId: instanciaId),
+          ),
+          (route) => false,
+        );
+      } else {
+        print('⚠️ NavigatorKey.currentState es null');
+      }
+    });
+  };
+  await RecurrentesBackgroundService.initialize();
+  await RecurrentesBackgroundService.scheduleDailyCheck();
   runApp(MyApp());
 }
 
@@ -43,6 +71,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Gestor Gastos',
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,

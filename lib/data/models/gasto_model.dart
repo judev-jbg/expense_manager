@@ -7,8 +7,9 @@ class GastoModel extends Equatable {
   final double importe;
   final DateTime fecha;
   final String categoriaId;
-  final String? empresaId; // Nullable
-  final String? notas; // Nullable
+  final String? empresaId;
+  final String? notas;
+  final String? configuracionRecurrenciaId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -20,6 +21,7 @@ class GastoModel extends Equatable {
     required this.categoriaId,
     this.empresaId,
     this.notas,
+    this.configuracionRecurrenciaId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,6 +36,8 @@ class GastoModel extends Equatable {
       categoriaId: map['categoria_id'] as String,
       empresaId: map['empresa_id'] as String?,
       notas: map['notas'] as String?,
+      configuracionRecurrenciaId:
+          map['configuracion_recurrencia_id'] as String?,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at'] as int),
     );
@@ -49,6 +53,7 @@ class GastoModel extends Equatable {
       'categoria_id': categoriaId,
       'empresa_id': empresaId,
       'notas': notas,
+      'configuracion_recurrencia_id': configuracionRecurrenciaId,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
     };
@@ -63,6 +68,7 @@ class GastoModel extends Equatable {
     String? categoriaId,
     String? empresaId,
     String? notas,
+    String? configuracionRecurrenciaId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -74,6 +80,8 @@ class GastoModel extends Equatable {
       categoriaId: categoriaId ?? this.categoriaId,
       empresaId: empresaId ?? this.empresaId,
       notas: notas ?? this.notas,
+      configuracionRecurrenciaId:
+          configuracionRecurrenciaId ?? this.configuracionRecurrenciaId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -88,12 +96,13 @@ class GastoModel extends Equatable {
     categoriaId,
     empresaId,
     notas,
+    configuracionRecurrenciaId,
     createdAt,
     updatedAt,
   ];
 
   @override
   String toString() {
-    return 'GastoModel(id: $id, nombre: $nombre, importe: $importe, fecha: $fecha, categoriaId: $categoriaId)';
+    return 'GastoModel(id: $id, nombre: $nombre, importe: $importe, fecha: $fecha, categoriaId: $categoriaId, esRecurrente: ${configuracionRecurrenciaId != null})';
   }
 }

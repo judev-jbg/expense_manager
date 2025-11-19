@@ -8,6 +8,7 @@ import '../../bloc/gastos/gastos_state.dart';
 import '../agregar_gasto/agregar_gasto_screen.dart';
 import '../configuracion/configuracion_screen.dart';
 import '../analisis/analisis_screen.dart';
+import '../recurrentes/recurrentes_screen.dart';
 import '../busqueda/busqueda_screen.dart';
 import 'widgets/gasto_card.dart';
 
@@ -281,6 +282,11 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (context) => AnalisisScreen()),
             );
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => RecurrentesScreen()),
+            );
           }
         },
         items: [
@@ -291,6 +297,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
             label: 'Análisis',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.repeat),
+            label: 'Recurrentes',
           ),
         ],
       ),

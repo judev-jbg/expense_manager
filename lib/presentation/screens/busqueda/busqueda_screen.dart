@@ -10,7 +10,6 @@ import '../../bloc/categorias/categorias_state.dart';
 import '../../bloc/empresas/empresas_bloc.dart';
 import '../../bloc/empresas/empresas_event.dart';
 import '../../bloc/empresas/empresas_state.dart';
-import '../agregar_gasto/agregar_gasto_screen.dart';
 import '../home/widgets/gasto_card.dart';
 
 class BusquedaScreen extends StatefulWidget {

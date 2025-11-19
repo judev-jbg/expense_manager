@@ -15,6 +15,7 @@ import '../../../data/models/gasto_sugerencia_model.dart';
 import '../../../data/repositories/gastos_repository_impl.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../data/models/configuracion_recurrencia_model.dart';
+import '../../../domain/services/generador_instancias_service.dart';
 import '../../bloc/categorias/categorias_bloc.dart';
 import '../../bloc/categorias/categorias_state.dart';
 import '../../bloc/empresas/empresas_bloc.dart';
@@ -45,6 +46,8 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
 
   final _databaseHelper = DatabaseHelper();
 
+  final _generadorInstancias = GeneradorInstanciasService();
+
   CategoriaModel? _categoriaSeleccionada;
   EmpresaModel? _empresaSeleccionada;
   DateTime _fechaSeleccionada = DateTime.now();
@@ -52,15 +55,14 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   bool _isEditMode = false;
   bool _sugerenciaSeleccionada = false;
 
-  // ✨ NUEVO: Lista de adjuntos
   List<AdjuntoModel> _adjuntos = [];
-  bool _cargandoAdjuntos = false;
-  // ✨ NUEVO: Variables para recurrencia
   bool _esRecurrente = false;
   FrecuenciaRecurrencia _frecuenciaRecurrente = FrecuenciaRecurrencia.MENSUAL;
   int? _diaDelMes;
   int? _diaSemana;
   int? _intervaloCustom;
+
+  bool _cargandoAdjuntos = false;
 
   @override
   void initState() {
@@ -75,7 +77,11 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
       _fechaSeleccionada = gasto.fecha;
 
       _cargarDatosParaEdicion(gasto);
-      _cargarAdjuntosExistentes(gasto.id); // ✨ NUEVO
+      _cargarAdjuntosExistentes(gasto.id);
+
+      if (gasto.configuracionRecurrenciaId != null) {
+        _cargarConfiguracionRecurrente(gasto.configuracionRecurrenciaId!);
+      }
     }
   }
 
@@ -101,6 +107,30 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  // ✨ NUEVO: Cargar configuración recurrente
+  Future<void> _cargarConfiguracionRecurrente(String configuracionId) async {
+    try {
+      final configuracionMap = await _databaseHelper
+          .getConfiguracionRecurrenciaById(configuracionId);
+
+      if (configuracionMap != null) {
+        final configuracion = ConfiguracionRecurrenciaModel.fromMap(
+          configuracionMap,
+        );
+
+        setState(() {
+          _esRecurrente = true;
+          _frecuenciaRecurrente = configuracion.frecuencia;
+          _diaDelMes = configuracion.diaDelMes;
+          _diaSemana = configuracion.diaSemana;
+          _intervaloCustom = configuracion.intervaloCustom;
+        });
+      }
+    } catch (e) {
+      print('Error al cargar configuración recurrente: $e');
     }
   }
 
@@ -435,9 +465,12 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
       try {
         final uuid = Uuid();
         String gastoId;
+        String? configuracionRecurrenciaId;
 
         if (_isEditMode) {
           gastoId = widget.gastoParaEditar!.id;
+          configuracionRecurrenciaId =
+              widget.gastoParaEditar!.configuracionRecurrenciaId;
 
           final gastoActualizado = widget.gastoParaEditar!.copyWith(
             nombre: _nombreController.text.trim(),
@@ -456,6 +489,61 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
         } else {
           gastoId = uuid.v4();
 
+          // ✨ NUEVO: Guardar configuración recurrente PRIMERO si aplica
+          if (_esRecurrente) {
+            configuracionRecurrenciaId = uuid.v4();
+
+            final configuracion = ConfiguracionRecurrenciaModel(
+              id: configuracionRecurrenciaId,
+              nombreGasto: _nombreController.text.trim(),
+              importeBase: double.parse(_importeController.text),
+              categoriaId: _categoriaSeleccionada!.id,
+              empresaId: _empresaSeleccionada?.id,
+              frecuencia: _frecuenciaRecurrente,
+              intervaloCustom:
+                  _frecuenciaRecurrente == FrecuenciaRecurrencia.CUSTOM
+                  ? _intervaloCustom
+                  : null,
+              diaDelMes:
+                  (_frecuenciaRecurrente == FrecuenciaRecurrencia.MENSUAL ||
+                      _frecuenciaRecurrente ==
+                          FrecuenciaRecurrencia.BIMENSUAL ||
+                      _frecuenciaRecurrente == FrecuenciaRecurrencia.ANUAL)
+                  ? _diaDelMes
+                  : null,
+              diaSemana: _frecuenciaRecurrente == FrecuenciaRecurrencia.SEMANAL
+                  ? _diaSemana
+                  : null,
+              fechaInicio: _fechaSeleccionada,
+              fechaFin: null,
+              notificarDiasDespues: 1,
+              activa: true,
+              notasPlantilla: _notasController.text.trim().isEmpty
+                  ? null
+                  : _notasController.text.trim(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+
+            await _databaseHelper.insertConfiguracionRecurrencia(
+              configuracion.toMap(),
+            );
+
+            // ✨ NUEVO: Generar las próximas 3 instancias
+            try {
+              await _generadorInstancias.generarYGuardarInstancias(
+                configuracion,
+                cantidadInstancias: 3,
+              );
+              print(
+                '✅ Se generaron 3 instancias recurrentes para: ${configuracion.nombreGasto}',
+              );
+            } catch (e) {
+              print('❌ Error al generar instancias: $e');
+              // No bloqueamos el guardado del gasto
+            }
+          }
+
           final nuevoGasto = GastoModel(
             id: gastoId,
             nombre: _nombreController.text.trim(),
@@ -466,59 +554,13 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
             notas: _notasController.text.trim().isEmpty
                 ? null
                 : _notasController.text.trim(),
+            configuracionRecurrenciaId: configuracionRecurrenciaId,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
 
           // ✨ CAMBIO: Guardar directamente en repositorio y ESPERAR
           await _gastosRepository.insertGasto(nuevoGasto);
-        }
-
-        // ✨ NUEVO: Guardar configuración recurrente si aplica
-        // ✨ MODIFICADO: Guardar configuración recurrente si aplica
-        if (_esRecurrente) {
-          final configuracion = ConfiguracionRecurrenciaModel(
-            id: uuid.v4(),
-            nombreGasto: _nombreController.text.trim(),
-            importeBase: double.parse(_importeController.text),
-            categoriaId: _categoriaSeleccionada!.id,
-            empresaId: _empresaSeleccionada?.id,
-            frecuencia: _frecuenciaRecurrente,
-            intervaloCustom:
-                _frecuenciaRecurrente == FrecuenciaRecurrencia.CUSTOM
-                ? _intervaloCustom
-                : null,
-            diaDelMes:
-                (_frecuenciaRecurrente == FrecuenciaRecurrencia.MENSUAL ||
-                    _frecuenciaRecurrente == FrecuenciaRecurrencia.BIMENSUAL ||
-                    _frecuenciaRecurrente == FrecuenciaRecurrencia.ANUAL)
-                ? _diaDelMes
-                : null,
-            diaSemana: _frecuenciaRecurrente == FrecuenciaRecurrencia.SEMANAL
-                ? _diaSemana
-                : null,
-            fechaInicio: _fechaSeleccionada,
-            fechaFin: null,
-            notificarDiasDespues: 1,
-            activa: true,
-            notasPlantilla: _notasController.text.trim().isEmpty
-                ? null
-                : _notasController.text.trim(),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-
-          try {
-            // Guardar configuración en BD
-            await _databaseHelper.insertConfiguracionRecurrencia(
-              configuracion.toMap(),
-            );
-
-            // TODO: Generar primera instancia (lo haremos en el siguiente paso)
-          } catch (e) {
-            print('Error al guardar configuración recurrente: $e');
-            // No bloqueamos el guardado del gasto si falla la recurrencia
-          }
         }
 
         // ✨ AHORA SÍ: Guardar adjuntos nuevos (el gasto ya existe en BD)
@@ -748,7 +790,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               builder: (context, state) {
                 if (state is CategoriasLoaded) {
                   return DropdownButtonFormField<CategoriaModel>(
-                    value: _categoriaSeleccionada,
+                    initialValue: _categoriaSeleccionada,
                     decoration: InputDecoration(
                       labelText: 'Categoría *',
                       border: OutlineInputBorder(),
@@ -823,7 +865,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                   }
 
                   return DropdownButtonFormField<EmpresaModel>(
-                    value: _empresaSeleccionada,
+                    initialValue: _empresaSeleccionada,
                     decoration: InputDecoration(
                       labelText: 'Empresa (opcional)',
                       border: OutlineInputBorder(),
