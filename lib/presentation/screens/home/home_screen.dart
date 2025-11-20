@@ -68,7 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Obtiene el nombre del mes en español
   String _getNombreMes(int mes) {
     final fecha = DateTime(_anioActual, mes);
-    return DateFormat('MMMM yyyy', 'es_ES').format(fecha);
+    return DateFormat('MMM', 'es_ES').format(fecha);
+  }
+
+  /// Obtiene el nombre del mes en español
+  String _getAnio(int mes) {
+    final fecha = DateTime(_anioActual, mes);
+    return DateFormat('yyyy', 'es_ES').format(fecha);
   }
 
   @override
@@ -110,10 +116,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(Icons.chevron_left),
                   onPressed: _mesPrevio,
                 ),
-                Text(
-                  _getNombreMes(_mesActual),
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Column(
+                  children: [
+                    Text(
+                      _getNombreMes(_mesActual),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _getAnio(_mesActual),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
+
                 IconButton(
                   icon: Icon(Icons.chevron_right),
                   onPressed: _mesSiguiente,

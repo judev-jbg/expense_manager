@@ -40,5 +40,30 @@ dependencies:
   # Background tasks
   android_alarm_manager_plus: ^4.0.2
 
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.5
+
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icons/launcher_icon.png
+    - assets/icons/splash_icon.png
+
+# Configuración de iconos (ejecutar: flutter pub run flutter_launcher_icons)
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/icons/launcher_icon.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icons/launcher_icon.png"
+
+# Configuración de splash screen (ejecutar: flutter pub run flutter_native_splash:create)
+flutter_native_splash:
+  android: true
+  color: "#ffffff"
+  image: "assets/icons/splash_icon.png"
+  android_12:
+    color: "#ffffff"
+    image: "assets/icons/splash_icon.png"
+    icon_background_color: "#ffffff"
