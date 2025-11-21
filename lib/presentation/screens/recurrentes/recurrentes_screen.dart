@@ -1,9 +1,11 @@
-import 'package:expense_manager/presentation/screens/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../data/models/configuracion_recurrencia_model.dart';
 import '../../../data/models/instancia_recurrente_model.dart';
+import '../../widgets/custom_bottom_nav.dart';
+import '../home/home_screen.dart';
 import '../analisis/analisis_screen.dart';
 import 'widgets/recurrente_detail_dialog.dart';
 
@@ -49,7 +51,6 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
           .map((map) => ConfiguracionRecurrenciaModel.fromMap(map))
           .toList();
 
-      // Cargar instancias para cada configuración
       final Map<String, List<InstanciaRecurrenteModel>> instancias = {};
 
       for (var config in configuraciones) {
@@ -74,7 +75,8 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar datos: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -83,57 +85,114 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Gastos Recurrentes'),
-        bottom: TabBar(
-          controller: _tabController,
-          onTap: (index) {
-            _cargarDatos();
-          },
-          tabs: [
-            Tab(icon: Icon(Icons.check_circle), text: 'Activos'),
-            Tab(icon: Icon(Icons.list), text: 'Todos'),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Header
+                _buildHeader(),
+
+                // Custom Tab Bar
+                _buildTabBar(),
+
+                // Content
+                Expanded(
+                  child: _cargando
+                      ? Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        )
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildListaRecurrentes(soloActivos: true),
+                            _buildListaRecurrentes(soloActivos: false),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+
+            // Bottom Navigation flotante
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CustomBottomNav(
+                currentIndex: 2,
+                onTap: (index) {
+                  if (index == 0) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => AnalisisScreen()),
+                    );
+                  } else if (index == 1) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ),
           ],
         ),
       ),
-      body: _cargando
-          ? Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildListaRecurrentes(soloActivos: true),
-                _buildListaRecurrentes(soloActivos: false),
-              ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: AppColors.background,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Text(
+            'Gastos recurrentes',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: TabBar(
+        controller: _tabController,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
-              (route) => false,
-            );
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => AnalisisScreen()),
-            );
-          }
+          _cargarDatos();
         },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Gastos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Análisis',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.repeat),
-            label: 'Recurrentes',
-          ),
+        indicator: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: AppColors.textOnPrimary,
+        unselectedLabelColor: AppColors.textOnPrimary.withValues(alpha: 0.7),
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
+        tabs: [
+          Tab(text: 'Activos'),
+          Tab(text: 'Todos'),
         ],
       ),
     );
@@ -145,18 +204,36 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.repeat_outlined, size: 64, color: Colors.grey[400]),
-            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.repeat_outlined,
+                size: 48,
+                color: AppColors.primary,
+              ),
+            ),
+            SizedBox(height: AppSpacing.md),
             Text(
               soloActivos
                   ? 'No hay gastos recurrentes activos'
                   : 'No hay gastos recurrentes',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Crea un gasto y activa "Es recurrente"',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -165,8 +242,14 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
 
     return RefreshIndicator(
       onRefresh: _cargarDatos,
+      color: AppColors.primary,
       child: ListView.builder(
-        padding: EdgeInsets.all(8),
+        padding: EdgeInsets.only(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          top: AppSpacing.md,
+          bottom: 100,
+        ),
         itemCount: _configuraciones.length,
         itemBuilder: (context, index) {
           final config = _configuraciones[index];
@@ -182,7 +265,6 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
     ConfiguracionRecurrenciaModel config,
     List<InstanciaRecurrenteModel> instancias,
   ) {
-    // Estadísticas
     final pendientes = instancias
         .where((i) => i.estado == EstadoInstancia.PENDIENTE)
         .length;
@@ -192,140 +274,154 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
     final omitidas = instancias
         .where((i) => i.estado == EstadoInstancia.OMITIDA)
         .length;
-    final saltadas = instancias
-        .where((i) => i.estado == EstadoInstancia.SALTADA)
-        .length;
 
-    // Próxima instancia pendiente
     InstanciaRecurrenteModel? proximaInstancia;
     try {
       proximaInstancia = instancias
           .where((i) => i.estado == EstadoInstancia.PENDIENTE)
           .reduce((a, b) => a.fechaEsperada.isBefore(b.fechaEsperada) ? a : b);
-    } catch (e) {
-      // No hay instancias pendientes
-    }
+    } catch (e) {}
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: InkWell(
-        onTap: () => _mostrarDetalles(config, instancias),
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  // Icono de estado
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: config.activa
-                          ? Colors.orange.shade100
-                          : Colors.grey.shade300,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.repeat,
-                      color: config.activa
-                          ? Colors.orange.shade700
-                          : Colors.grey.shade600,
-                      size: 24,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-
-                  // Nombre e importe
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          config.nombreGasto,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: config.activa ? Colors.black : Colors.grey,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '€${config.importeBase.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Switch activa/inactiva
-                  Switch(
-                    value: config.activa,
-                    onChanged: (value) => _toggleActiva(config, value),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-
-              // Frecuencia
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  config.descripcionFrecuencia,
-                  style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
-                ),
-              ),
-
-              // Próxima fecha
-              if (proximaInstancia != null) ...[
-                SizedBox(height: 8),
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () => _mostrarDetalles(config, instancias),
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.grey[600],
+                    // Icono circular
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: config.activa
+                            ? AppColors.accent.withValues(alpha: 0.15)
+                            : AppColors.textLight.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.repeat,
+                        color: config.activa
+                            ? AppColors.accent
+                            : AppColors.textLight,
+                        size: 24,
+                      ),
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Próximo: ${DateFormat('dd/MM/yyyy').format(proximaInstancia.fechaEsperada)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    SizedBox(width: AppSpacing.md),
+
+                    // Nombre e importe
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            config.nombreGasto,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: config.activa
+                                  ? AppColors.textPrimary
+                                  : AppColors.textLight,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '€ ${config.importeBase.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      '(Notif: ${DateFormat('dd/MM').format(proximaInstancia.fechaNotificacion)})',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+
+                    // Switch
+                    Switch(
+                      value: config.activa,
+                      onChanged: (value) => _toggleActiva(config, value),
+                      activeColor: AppColors.primary,
                     ),
                   ],
                 ),
-              ],
+                SizedBox(height: AppSpacing.md),
 
-              SizedBox(height: 12),
-              Divider(height: 1),
-              SizedBox(height: 8),
+                // Frecuencia tag
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    config.descripcionFrecuencia,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
 
-              // Estadísticas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStat('Pendientes', pendientes, Colors.orange),
-                  _buildStat('Confirmadas', confirmadas, Colors.green),
-                  _buildStat('Omitidas', omitidas, Colors.grey),
-                  if (saltadas > 0)
-                    _buildStat('Saltadas', saltadas, Colors.red),
+                // Próxima fecha
+                if (proximaInstancia != null) ...[
+                  SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Text(
+                        'Proximo: ${DateFormat('dd/MM/yyyy').format(proximaInstancia.fechaEsperada)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '(Notif. ${DateFormat('dd/MM').format(proximaInstancia.fechaNotificacion)})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-              ),
-            ],
+
+                SizedBox(height: AppSpacing.md),
+                Divider(color: AppColors.background, height: 1),
+                SizedBox(height: AppSpacing.md),
+
+                // Estadísticas
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStat('Pendientes', pendientes, AppColors.accent),
+                    _buildStat('Confirmados', confirmadas, AppColors.success),
+                    _buildStat('Omitidas', omitidas, AppColors.textLight),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -343,7 +439,13 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
             color: color,
           ),
         ),
-        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -352,8 +454,10 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
     ConfiguracionRecurrenciaModel config,
     List<InstanciaRecurrenteModel> instancias,
   ) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => RecurrenteDetailDialog(
         configuracion: config,
         instancias: instancias,
@@ -390,7 +494,8 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
                 ? 'Gasto recurrente activado'
                 : 'Gasto recurrente desactivado',
           ),
-          backgroundColor: activa ? Colors.green : Colors.orange,
+          backgroundColor: activa ? AppColors.success : AppColors.warning,
+          behavior: SnackBarBehavior.floating,
         ),
       );
 
@@ -399,7 +504,8 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al actualizar: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -408,65 +514,7 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
   Future<void> _eliminarConfiguracion(
     ConfiguracionRecurrenciaModel config,
   ) async {
-    // Confirmar eliminación
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('Eliminar gasto recurrente'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '¿Estás seguro de que deseas eliminar "${config.nombreGasto}"?',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.red.shade700),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Se eliminarán todas las instancias pendientes y el historial.',
-                        style: TextStyle(
-                          color: Colors.red.shade900,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(
-                'Eliminar',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    final confirmar = await _mostrarConfirmacionEliminar(config);
 
     if (confirmar != true) return;
 
@@ -476,7 +524,8 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gasto recurrente eliminado'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
         ),
       );
 
@@ -485,9 +534,113 @@ class _RecurrentesScreenState extends State<RecurrentesScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al eliminar: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
+  }
+
+  Future<bool?> _mostrarConfirmacionEliminar(
+    ConfiguracionRecurrenciaModel config,
+  ) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bottomSheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xl),
+            ),
+          ),
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textLight.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                  size: 32,
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+              Text(
+                'Eliminar "${config.nombreGasto}"',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: AppSpacing.sm),
+              Text(
+                'Se eliminarán todas las instancias pendientes y el historial.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(bottomSheetContext).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        side: BorderSide(color: AppColors.textLight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(bottomSheetContext).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text(
+                        'Eliminar',
+                        style: TextStyle(color: AppColors.textOnPrimary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.md),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
