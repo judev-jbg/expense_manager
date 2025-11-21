@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/models/analisis_categoria_model.dart';
 import '../../../data/repositories/gastos_repository_impl.dart';
+import '../../widgets/month_selector.dart';
 import 'widgets/stats_summary_card.dart';
 import 'widgets/monthly_bar_chart.dart';
 import 'widgets/category_breakdown_card.dart';
@@ -40,41 +41,33 @@ class _VistaMensualTabState extends State<VistaMensualTab> {
     });
 
     try {
-      // Cargar análisis por categoría
       final analisis = await _gastosRepository.getAnalisisPorCategoriaMes(
         _mesActual,
         _anioActual,
       );
 
-      // Calcular total del mes
       final total = await _gastosRepository.getTotalMes(
         _mesActual,
         _anioActual,
       );
 
-      // Obtener mayor gasto
       final mayorGasto = await _gastosRepository.getMayorGastoMes(
         _mesActual,
         _anioActual,
       );
 
-      // Calcular días transcurridos del mes
       final ahora = DateTime.now();
       final diasMes = DateTime(_anioActual, _mesActual + 1, 0).day;
       int diasTranscurridos;
 
       if (_mesActual == ahora.month && _anioActual == ahora.year) {
-        // Mes actual: días hasta hoy
         diasTranscurridos = ahora.day;
       } else if (DateTime(_anioActual, _mesActual).isAfter(ahora)) {
-        // Mes futuro: 0 días
         diasTranscurridos = 0;
       } else {
-        // Mes pasado: todos los días del mes
         diasTranscurridos = diasMes;
       }
 
-      // Calcular promedio diario
       final promedio = diasTranscurridos > 0 ? total / diasTranscurridos : 0;
 
       setState(() {
@@ -101,117 +94,104 @@ class _VistaMensualTabState extends State<VistaMensualTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar datos: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  void _mesPrevio() {
+  void _onMonthChanged(int mes, int anio) {
     setState(() {
-      if (_mesActual == 1) {
-        _mesActual = 12;
-        _anioActual--;
-      } else {
-        _mesActual--;
-      }
+      _mesActual = mes;
+      _anioActual = anio;
     });
     _cargarDatos();
-  }
-
-  void _mesSiguiente() {
-    setState(() {
-      if (_mesActual == 12) {
-        _mesActual = 1;
-        _anioActual++;
-      } else {
-        _mesActual++;
-      }
-    });
-    _cargarDatos();
-  }
-
-  String _getNombreMes(int mes) {
-    final fecha = DateTime(_anioActual, mes);
-    return DateFormat('MMMM yyyy', 'es_ES').format(fecha);
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Selector de mes
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left),
-                onPressed: _cargando ? null : _mesPrevio,
-              ),
-              Text(
-                _getNombreMes(_mesActual),
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: Icon(Icons.chevron_right),
-                onPressed: _cargando ? null : _mesSiguiente,
-              ),
-            ],
+        // Selector de mes horizontal
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: MonthSelector(
+            selectedMonth: _mesActual,
+            selectedYear: _anioActual,
+            onMonthChanged: _onMonthChanged,
           ),
         ),
 
         // Contenido
         Expanded(
           child: _cargando
-              ? Center(child: CircularProgressIndicator())
-              : _analisis.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.analytics_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No hay gastos en este mes',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 )
-              : RefreshIndicator(
-                  onRefresh: _cargarDatos,
-                  child: ListView(
-                    children: [
-                      // Resumen del mes
-                      StatsSummaryCard(
-                        totalMes: _totalMes,
-                        promedioDiario: _promedioDiario,
-                        mayorGastoNombre: _mayorGastoNombre,
-                        mayorGastoImporte: _mayorGastoImporte,
-                        diasTranscurridos: _diasTranscurridos,
+              : _analisis.isEmpty
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      onRefresh: _cargarDatos,
+                      color: AppColors.primary,
+                      child: ListView(
+                        padding: EdgeInsets.only(bottom: 100),
+                        children: [
+                          // Resumen del mes
+                          StatsSummaryCard(
+                            totalMes: _totalMes,
+                            promedioDiario: _promedioDiario,
+                            mayorGastoNombre: _mayorGastoNombre,
+                            mayorGastoImporte: _mayorGastoImporte,
+                            diasTranscurridos: _diasTranscurridos,
+                          ),
+
+                          // Gráfico de barras
+                          MonthlyBarChart(
+                            analisis: _analisis,
+                            totalMes: _totalMes,
+                          ),
+
+                          // Desglose por categoría
+                          CategoryBreakdownCard(
+                            analisis: _analisis,
+                            totalMes: _totalMes,
+                          ),
+                        ],
                       ),
-
-                      // Gráfico de barras
-                      MonthlyBarChart(analisis: _analisis, totalMes: _totalMes),
-
-                      // Desglose por categoría
-                      CategoryBreakdownCard(
-                        analisis: _analisis,
-                        totalMes: _totalMes,
-                      ),
-
-                      SizedBox(height: 16),
-                    ],
-                  ),
-                ),
+                    ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            'No hay gastos en este mes',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

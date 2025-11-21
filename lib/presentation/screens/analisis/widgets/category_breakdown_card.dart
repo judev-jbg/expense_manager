@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../data/models/analisis_categoria_model.dart';
 import '../../configuracion/widgets/icon_picker_dialog.dart';
 
@@ -18,23 +19,35 @@ class CategoryBreakdownCard extends StatelessWidget {
       return SizedBox.shrink();
     }
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Desglose por Categoría',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Desgloce por categoria',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
             ),
-            SizedBox(height: 16),
-            ...analisis.map((categoria) {
-              return _buildCategoriaItem(categoria);
-            }).toList(),
-          ],
-        ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          ...analisis.map((categoria) {
+            return _buildCategoriaItem(categoria);
+          }),
+        ],
       ),
     );
   }
@@ -51,22 +64,22 @@ class CategoryBreakdownCard extends StatelessWidget {
     final icono = IconPickerDialog.getIconData(categoria.categoriaIcono);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
         children: [
           Row(
             children: [
-              // Icono
+              // Icono circular
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icono, color: color, size: 20),
               ),
-              SizedBox(width: 12),
+              SizedBox(width: AppSpacing.md),
 
               // Nombre y cantidad
               Expanded(
@@ -77,13 +90,17 @@ class CategoryBreakdownCard extends StatelessWidget {
                       categoria.categoriaNombre,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     SizedBox(height: 2),
                     Text(
-                      '${categoria.cantidadGastos} gasto(s)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      '${categoria.cantidadGastos} gasto${categoria.cantidadGastos != 1 ? 's' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -98,26 +115,29 @@ class CategoryBreakdownCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: color,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   SizedBox(height: 2),
                   Text(
-                    '${porcentaje.toStringAsFixed(1)}%',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    '${porcentaje.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
 
           // Barra de progreso
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: LinearProgressIndicator(
               value: porcentaje / 100,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: AppColors.background,
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 6,
             ),

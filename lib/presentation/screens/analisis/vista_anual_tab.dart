@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/gastos_repository_impl.dart';
 import 'widgets/yearly_summary_card.dart';
 import 'widgets/yearly_line_chart.dart';
@@ -35,20 +36,16 @@ class _VistaAnualTabState extends State<VistaAnualTab> {
     });
 
     try {
-      // Cargar análisis por mes del año
       final datosMensuales = await _gastosRepository.getAnalisisPorMesAnio(
         _anioActual,
       );
 
-      // Calcular total anual
       final totalAnio = datosMensuales
           .map((d) => d['total'] as double)
           .reduce((a, b) => a + b);
 
-      // Calcular promedio mensual
       final promedio = totalAnio / 12;
 
-      // Encontrar mes con mayor gasto
       String? mesMayor;
       double? gastoMayor;
 
@@ -84,7 +81,8 @@ class _VistaAnualTabState extends State<VistaAnualTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar datos: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -110,20 +108,24 @@ class _VistaAnualTabState extends State<VistaAnualTab> {
       children: [
         // Selector de año
         Container(
-          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: Icon(Icons.chevron_left),
+                icon: Icon(Icons.chevron_left, color: AppColors.textPrimary),
                 onPressed: _cargando ? null : _anioPrevio,
               ),
               Text(
                 '$_anioActual',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right),
+                icon: Icon(Icons.chevron_right, color: AppColors.textPrimary),
                 onPressed: _cargando ? null : _anioSiguiente,
               ),
             ],
@@ -133,55 +135,66 @@ class _VistaAnualTabState extends State<VistaAnualTab> {
         // Contenido
         Expanded(
           child: _cargando
-              ? Center(child: CircularProgressIndicator())
-              : _totalAnio == 0
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.show_chart_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No hay gastos en este año',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 )
-              : RefreshIndicator(
-                  onRefresh: _cargarDatos,
-                  child: ListView(
-                    children: [
-                      // Resumen anual
-                      YearlySummaryCard(
-                        totalAnio: _totalAnio,
-                        promedioMensual: _promedioMensual,
-                        mesMayorGasto: _mesMayorGasto,
-                        mayorGastoMes: _mayorGastoMes,
+              : _totalAnio == 0
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      onRefresh: _cargarDatos,
+                      color: AppColors.primary,
+                      child: ListView(
+                        padding: EdgeInsets.only(bottom: 100),
+                        children: [
+                          YearlySummaryCard(
+                            totalAnio: _totalAnio,
+                            promedioMensual: _promedioMensual,
+                            mesMayorGasto: _mesMayorGasto,
+                            mayorGastoMes: _mayorGastoMes,
+                          ),
+                          YearlyLineChart(
+                            datosMensuales: _datosMensuales,
+                            anio: _anioActual,
+                          ),
+                          MonthlyBreakdownTable(
+                            datosMensuales: _datosMensuales,
+                            anio: _anioActual,
+                          ),
+                        ],
                       ),
-
-                      // Gráfico de líneas
-                      YearlyLineChart(
-                        datosMensuales: _datosMensuales,
-                        anio: _anioActual,
-                      ),
-
-                      // Tabla de desglose mensual
-                      MonthlyBreakdownTable(
-                        datosMensuales: _datosMensuales,
-                        anio: _anioActual,
-                      ),
-
-                      SizedBox(height: 16),
-                    ],
-                  ),
-                ),
+                    ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.show_chart_outlined,
+              size: 48,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            'No hay gastos en este año',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

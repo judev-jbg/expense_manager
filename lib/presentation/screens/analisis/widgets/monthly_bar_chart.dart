@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../data/models/analisis_categoria_model.dart';
 import '../../configuracion/widgets/icon_picker_dialog.dart';
 
@@ -17,16 +18,27 @@ class MonthlyBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (analisis.isEmpty) {
       return Container(
-        height: 300,
+        margin: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        height: 200,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bar_chart, size: 64, color: Colors.grey[400]),
-              SizedBox(height: 16),
-              Text(
-                'No hay datos para mostrar',
-                style: TextStyle(color: Colors.grey[600]),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Text(
+                  'Grafico de barras por categoria',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
               ),
             ],
           ),
@@ -34,112 +46,133 @@ class MonthlyBarChart extends StatelessWidget {
       );
     }
 
-    // Tomar máximo 8 categorías (las más altas)
     final categoriasTop = analisis.take(8).toList();
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Gastos por Categoría',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Gastos por categoria',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
             ),
-            SizedBox(height: 24),
-            Container(
-              height: 300,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: _getMaxY(categoriasTop),
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (BarChartGroupData group) {
-                        return Colors.blueGrey.withOpacity(0.8);
-                      },
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final categoria = categoriasTop[groupIndex];
-                        return BarTooltipItem(
-                          '${categoria.categoriaNombre}\n',
-                          TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          children: [
-                            TextSpan(
-                              text:
-                                  '€${categoria.totalGastado.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: Colors.yellow,
-                                fontWeight: FontWeight.w500,
-                              ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          Container(
+            height: 200,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: _getMaxY(categoriasTop),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (BarChartGroupData group) {
+                      return AppColors.primaryDark.withValues(alpha: 0.9);
+                    },
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final categoria = categoriasTop[groupIndex];
+                      return BarTooltipItem(
+                        '${categoria.categoriaNombre}\n',
+                        TextStyle(
+                          color: AppColors.textOnPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '€${categoria.totalGastado.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= categoriasTop.length) {
+                          return Text('');
+                        }
+                        final categoria = categoriasTop[value.toInt()];
+                        final icono = IconPickerDialog.getIconData(
+                          categoria.categoriaIcono,
+                        );
+                        final color = Color(
+                          int.parse(
+                            categoria.categoriaColor.replaceFirst('#', '0xff'),
+                          ),
+                        );
+
+                        return Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Icon(icono, size: 18, color: color),
                         );
                       },
+                      reservedSize: 36,
                     ),
                   ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= categoriasTop.length) {
-                            return Text('');
-                          }
-                          final categoria = categoriasTop[value.toInt()];
-                          final icono = IconPickerDialog.getIconData(
-                            categoria.categoriaIcono,
-                          );
-                          final color = Color(
-                            int.parse(
-                              categoria.categoriaColor.replaceFirst(
-                                '#',
-                                '0xff',
-                              ),
-                            ),
-                          );
-
-                          return Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Icon(icono, size: 20, color: color),
-                          );
-                        },
-                        reservedSize: 40,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            '€${value.toInt()}',
-                            style: TextStyle(fontSize: 10),
-                          );
-                        },
-                        reservedSize: 40,
-                      ),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '€${value.toInt()}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textLight,
+                          ),
+                        );
+                      },
+                      reservedSize: 40,
                     ),
                   ),
-                  gridData: FlGridData(show: true, drawVerticalLine: false),
-                  borderData: FlBorderData(show: false),
-                  barGroups: _buildBarGroups(categoriasTop),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: _getMaxY(categoriasTop) / 4,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: AppColors.background,
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: _buildBarGroups(categoriasTop),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -160,7 +193,7 @@ class MonthlyBarChart extends StatelessWidget {
           BarChartRodData(
             toY: categoria.totalGastado,
             color: color,
-            width: 20,
+            width: 16,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
@@ -178,7 +211,6 @@ class MonthlyBarChart extends StatelessWidget {
         .map((c) => c.totalGastado)
         .reduce((a, b) => a > b ? a : b);
 
-    // Añadir 20% de margen superior
     return maxValue * 1.2;
   }
 }
