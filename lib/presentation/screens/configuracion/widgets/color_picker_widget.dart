@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class ColorPickerWidget extends StatelessWidget {
   final String colorSeleccionado;
   final Function(String) onColorSelected;
 
-  // Paleta de colores predefinidos
   static const List<Map<String, dynamic>> coloresDisponibles = [
     {'nombre': 'Verde', 'hex': '#4CAF50'},
     {'nombre': 'Azul', 'hex': '#2196F3'},
@@ -37,35 +37,53 @@ class ColorPickerWidget extends StatelessWidget {
       children: [
         Text(
           'Color',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
         ),
-        SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: coloresDisponibles.map((color) {
-            final hexColor = color['hex'] as String;
-            final isSelected = colorSeleccionado == hexColor;
+        SizedBox(height: AppSpacing.sm),
+        Container(
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: coloresDisponibles.map((color) {
+              final hexColor = color['hex'] as String;
+              final isSelected = colorSeleccionado == hexColor;
 
-            return GestureDetector(
-              onTap: () => onColorSelected(hexColor),
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(int.parse(hexColor.replaceFirst('#', '0xff'))),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? Colors.black : Colors.grey.shade300,
-                    width: isSelected ? 3 : 1,
+              return GestureDetector(
+                onTap: () => onColorSelected(hexColor),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Color(int.parse(hexColor.replaceFirst('#', '0xff'))),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppColors.textPrimary : Colors.transparent,
+                      width: isSelected ? 3 : 0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
+                  child: isSelected
+                      ? Icon(Icons.check, color: Colors.white, size: 20)
+                      : null,
                 ),
-                child: isSelected
-                    ? Icon(Icons.check, color: Colors.white)
-                    : null,
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

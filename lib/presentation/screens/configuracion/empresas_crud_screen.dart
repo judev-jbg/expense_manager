@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/models/empresa_model.dart';
-import '../../../data/repositories/empresas_repository_impl.dart';
 import '../../bloc/empresas/empresas_bloc.dart';
 import '../../bloc/empresas/empresas_event.dart';
 import '../../bloc/empresas/empresas_state.dart';
@@ -21,13 +21,13 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
   @override
   void initState() {
     super.initState();
-    // Cargar todas las empresas al inicio
     context.read<EmpresasBloc>().add(LoadAllEmpresas());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           // Filtro por categoría
@@ -38,44 +38,16 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
             child: BlocBuilder<EmpresasBloc, EmpresasState>(
               builder: (context, state) {
                 if (state is EmpresasLoading) {
-                  return Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
                 }
 
                 if (state is EmpresasLoaded) {
                   if (state.empresas.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.business_outlined,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            _categoriaFiltroId != null
-                                ? 'No hay empresas en esta categoría'
-                                : 'No hay empresas registradas',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Toca el botón + para agregar una',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                    return _buildEmptyState();
                   }
 
-                  // Agrupar empresas por categoría
                   return _buildListaAgrupada(state.empresas);
                 }
 
@@ -84,18 +56,34 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error, size: 64, color: Colors.red),
-                        SizedBox(height: 16),
+                        Container(
+                          padding: EdgeInsets.all(AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        SizedBox(height: AppSpacing.md),
                         Text(
                           'Error al cargar empresas',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.xs),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 32),
                           child: Text(
                             state.message,
                             textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
                       ],
@@ -103,70 +91,143 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
                   );
                 }
 
-                return Center(child: Text('Estado inicial'));
+                return Center(
+                  child: Text(
+                    'Estado inicial',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                );
               },
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _mostrarDialogoCrear(context),
+        onPressed: () => _mostrarFormularioCrear(context),
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.textOnPrimary,
         child: Icon(Icons.add),
         tooltip: 'Agregar empresa',
       ),
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.business_outlined,
+              size: 48,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            _categoriaFiltroId != null
+                ? 'No hay empresas en esta categoría'
+                : 'No hay empresas registradas',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            'Toca el botón + para agregar una',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFiltroCategoria() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: BlocBuilder<CategoriasBloc, CategoriasState>(
         builder: (context, state) {
           if (state is CategoriasLoaded) {
             return Row(
               children: [
-                Icon(Icons.filter_list, size: 20),
-                SizedBox(width: 8),
+                Icon(
+                  Icons.filter_list,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: _categoriaFiltroId,
-                    decoration: InputDecoration(
-                      labelText: 'Filtrar por categoría',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        value: _categoriaFiltroId,
+                        isExpanded: true,
+                        hint: Text(
+                          'Todas las categorías',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: AppColors.textSecondary,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(
+                              'Todas las categorías',
+                              style: TextStyle(color: AppColors.textPrimary),
+                            ),
+                          ),
+                          ...state.categorias.map((categoria) {
+                            return DropdownMenuItem(
+                              value: categoria.id,
+                              child: Text(
+                                categoria.nombre,
+                                style: TextStyle(color: AppColors.textPrimary),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (categoriaId) {
+                          setState(() {
+                            _categoriaFiltroId = categoriaId;
+                          });
+
+                          if (categoriaId == null) {
+                            context.read<EmpresasBloc>().add(LoadAllEmpresas());
+                          } else {
+                            context.read<EmpresasBloc>().add(
+                              LoadEmpresasPorCategoria(categoriaId: categoriaId),
+                            );
+                          }
+                        },
                       ),
                     ),
-                    items: [
-                      DropdownMenuItem(
-                        value: null,
-                        child: Text('Todas las categorías'),
-                      ),
-                      ...state.categorias.map((categoria) {
-                        return DropdownMenuItem(
-                          value: categoria.id,
-                          child: Text(categoria.nombre),
-                        );
-                      }).toList(),
-                    ],
-                    onChanged: (categoriaId) {
-                      setState(() {
-                        _categoriaFiltroId = categoriaId;
-                      });
-
-                      if (categoriaId == null) {
-                        context.read<EmpresasBloc>().add(LoadAllEmpresas());
-                      } else {
-                        context.read<EmpresasBloc>().add(
-                          LoadEmpresasPorCategoria(categoriaId: categoriaId),
-                        );
-                      }
-                    },
                   ),
                 ),
               ],
@@ -179,13 +240,13 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
   }
 
   Widget _buildListaAgrupada(List<EmpresaModel> empresas) {
-    // Obtener categorías
     final categoriasState = context.read<CategoriasBloc>().state;
     if (categoriasState is! CategoriasLoaded) {
-      return Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
-    // Agrupar empresas por categoría
     final Map<String, List<EmpresaModel>> empresasPorCategoria = {};
 
     for (var empresa in empresas) {
@@ -196,7 +257,7 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
     }
 
     return ListView.builder(
-      padding: EdgeInsets.all(8),
+      padding: EdgeInsets.all(AppSpacing.md),
       itemCount: empresasPorCategoria.length,
       itemBuilder: (context, index) {
         final categoriaId = empresasPorCategoria.keys.elementAt(index);
@@ -230,31 +291,41 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
       children: [
         // Header de categoría
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          margin: EdgeInsets.only(top: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          margin: EdgeInsets.only(top: AppSpacing.sm),
           child: Row(
             children: [
-              Icon(icono, color: color, size: 20),
-              SizedBox(width: 8),
+              Container(
+                padding: EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Icon(icono, color: color, size: 18),
+              ),
+              SizedBox(width: AppSpacing.sm),
               Text(
                 nombreCategoria,
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: color,
                 ),
               ),
-              SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   '${empresas.length}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -267,24 +338,50 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
         // Lista de empresas
         ...empresas.map((empresa) => _buildEmpresaCard(empresa)).toList(),
 
-        SizedBox(height: 8),
+        SizedBox(height: AppSpacing.sm),
       ],
     );
   }
 
   Widget _buildEmpresaCard(EmpresaModel empresa) {
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
       child: ListTile(
-        leading: Icon(
-          Icons.business,
-          color: empresa.activa ? Colors.blue : Colors.grey,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: empresa.activa
+                ? AppColors.primary.withValues(alpha: 0.15)
+                : AppColors.textLight.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.business,
+            color: empresa.activa ? AppColors.primary : AppColors.textLight,
+            size: 20,
+          ),
         ),
         title: Text(
           empresa.nombre,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: empresa.activa ? Colors.black : Colors.grey,
+            fontWeight: FontWeight.w600,
+            color: empresa.activa ? AppColors.textPrimary : AppColors.textLight,
           ),
         ),
         subtitle: empresa.activa
@@ -292,7 +389,7 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
             : Text(
                 'Inactiva',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: AppColors.textLight,
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                 ),
@@ -301,12 +398,12 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(Icons.edit, color: Colors.blue),
-              onPressed: () => _mostrarDialogoEditar(context, empresa),
+              icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+              onPressed: () => _mostrarFormularioEditar(context, empresa),
             ),
             IconButton(
-              icon: Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _mostrarDialogoEliminar(context, empresa),
+              icon: Icon(Icons.delete_outline, color: AppColors.error),
+              onPressed: () => _mostrarConfirmarEliminar(context, empresa),
             ),
           ],
         ),
@@ -314,9 +411,11 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
     );
   }
 
-  void _mostrarDialogoCrear(BuildContext context) async {
-    final empresa = await showDialog<EmpresaModel>(
+  void _mostrarFormularioCrear(BuildContext context) async {
+    final empresa = await showModalBottomSheet<EmpresaModel>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) =>
           EmpresaFormDialog(categoriaIdInicial: _categoriaFiltroId),
     );
@@ -327,15 +426,21 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Empresa creada correctamente'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
         ),
       );
     }
   }
 
-  void _mostrarDialogoEditar(BuildContext context, EmpresaModel empresa) async {
-    final empresaEditada = await showDialog<EmpresaModel>(
+  void _mostrarFormularioEditar(BuildContext context, EmpresaModel empresa) async {
+    final empresaEditada = await showModalBottomSheet<EmpresaModel>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => EmpresaFormDialog(empresa: empresa),
     );
 
@@ -345,85 +450,160 @@ class _EmpresasCrudScreenState extends State<EmpresasCrudScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Empresa actualizada correctamente'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
         ),
       );
     }
   }
 
-  void _mostrarDialogoEliminar(
+  void _mostrarConfirmarEliminar(
     BuildContext context,
     EmpresaModel empresa,
   ) async {
-    // Contar gastos asociados
-    final repository = EmpresasRepositoryImpl();
-    // Necesitamos crear un método para contar gastos por empresa
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text('Eliminar empresa'),
-          content: Column(
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xl),
+            ),
+          ),
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: EdgeInsets.only(bottom: AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.textLight.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Icon
+              Container(
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                  size: 32,
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+
+              // Title
+              Text(
+                'Eliminar empresa',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: AppSpacing.sm),
+
+              // Message
               Text(
                 '¿Estás seguro de que deseas eliminar "${empresa.nombre}"?',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: AppSpacing.md),
+
+              // Info
               Container(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: Colors.blue.shade700),
-                    SizedBox(width: 12),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         'Los gastos asociados no se eliminarán, solo quedarán sin empresa asignada.',
                         style: TextStyle(
-                          color: Colors.blue.shade900,
                           fontSize: 13,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+              SizedBox(height: AppSpacing.lg),
+
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: BorderSide(color: AppColors.textLight),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text('Cancelar'),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.read<EmpresasBloc>().add(DeleteEmpresa(id: empresa.id));
+                        Navigator.of(dialogContext).pop();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Empresa eliminada correctamente'),
+                            backgroundColor: AppColors.accent,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: AppColors.textOnPrimary,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text('Eliminar'),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.md),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<EmpresasBloc>().add(DeleteEmpresa(id: empresa.id));
-                Navigator.of(dialogContext).pop();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Empresa eliminada correctamente'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              },
-              child: Text(
-                'Eliminar',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );

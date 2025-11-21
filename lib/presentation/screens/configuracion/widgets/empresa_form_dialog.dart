@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../data/models/categoria_model.dart';
 import '../../../../data/models/empresa_model.dart';
 import '../../../bloc/categorias/categorias_bloc.dart';
 import '../../../bloc/categorias/categorias_state.dart';
 
 class EmpresaFormDialog extends StatefulWidget {
-  final EmpresaModel? empresa; // null si es nueva, con datos si es edición
-  final String? categoriaIdInicial; // Para pre-seleccionar categoría
+  final EmpresaModel? empresa;
+  final String? categoriaIdInicial;
 
   const EmpresaFormDialog({Key? key, this.empresa, this.categoriaIdInicial})
     : super(key: key);
@@ -40,7 +41,6 @@ class _EmpresaFormDialogState extends State<EmpresaFormDialog> {
   }
 
   void _cargarCategoriaInicial() {
-    // Esperar a que las categorías estén cargadas
     Future.delayed(Duration(milliseconds: 100), () {
       final categoriasState = context.read<CategoriasBloc>().state;
       if (categoriasState is CategoriasLoaded) {
@@ -76,7 +76,11 @@ class _EmpresaFormDialogState extends State<EmpresaFormDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Por favor selecciona una categoría'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.accent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
           ),
         );
         return;
@@ -100,112 +104,222 @@ class _EmpresaFormDialogState extends State<EmpresaFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        padding: EdgeInsets.all(16),
-        constraints: BoxConstraints(maxHeight: 500),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Título
-                Text(
-                  _isEditMode ? 'Editar Empresa' : 'Nueva Empresa',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 16),
-
-                // Campo: Nombre
-                TextFormField(
-                  controller: _nombreController,
-                  decoration: InputDecoration(
-                    labelText: 'Nombre *',
-                    hintText: 'Ej: Mercadona',
-                    border: OutlineInputBorder(),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.md,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: EdgeInsets.only(bottom: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.textLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El nombre es obligatorio';
-                    }
-                    return null;
-                  },
                 ),
-                SizedBox(height: 16),
+              ),
 
-                // Campo: Categoría
-                BlocBuilder<CategoriasBloc, CategoriasState>(
-                  builder: (context, state) {
-                    if (state is CategoriasLoaded) {
-                      return DropdownButtonFormField<CategoriaModel>(
-                        initialValue: _categoriaSeleccionada,
-                        decoration: InputDecoration(
-                          labelText: 'Categoría *',
-                          border: OutlineInputBorder(),
+              // Título
+              Text(
+                _isEditMode ? 'Editar Empresa' : 'Nueva Empresa',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: AppSpacing.lg),
+
+              // Campo: Nombre
+              TextFormField(
+                controller: _nombreController,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Nombre',
+                  hintText: 'Ej: Mercadona',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  hintStyle: TextStyle(color: AppColors.textLight),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: AppColors.error),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'El nombre es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: AppSpacing.lg),
+
+              // Campo: Categoría
+              Text(
+                'Categoría',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              SizedBox(height: AppSpacing.sm),
+              BlocBuilder<CategoriasBloc, CategoriasState>(
+                builder: (context, state) {
+                  if (state is CategoriasLoaded) {
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<CategoriaModel>(
+                          value: _categoriaSeleccionada,
+                          isExpanded: true,
+                          hint: Text(
+                            'Selecciona una categoría',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                          icon: Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.textSecondary,
+                          ),
+                          items: state.categorias.map((categoria) {
+                            return DropdownMenuItem(
+                              value: categoria,
+                              child: Text(
+                                categoria.nombre,
+                                style: TextStyle(color: AppColors.textPrimary),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (categoria) {
+                            setState(() {
+                              _categoriaSeleccionada = categoria;
+                            });
+                          },
                         ),
-                        hint: Text('Selecciona una categoría'),
-                        items: state.categorias.map((categoria) {
-                          return DropdownMenuItem(
-                            value: categoria,
-                            child: Text(categoria.nombre),
-                          );
-                        }).toList(),
-                        onChanged: (categoria) {
-                          setState(() {
-                            _categoriaSeleccionada = categoria;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'La categoría es obligatoria';
-                          }
-                          return null;
-                        },
-                      );
-                    }
-                    return CircularProgressIndicator();
-                  },
-                ),
-                SizedBox(height: 16),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                },
+              ),
+              SizedBox(height: AppSpacing.lg),
 
-                // Campo: Activa
-                SwitchListTile(
-                  title: Text('Empresa activa'),
-                  subtitle: Text(
-                    _activa
-                        ? 'Aparecerá en los formularios de gastos'
-                        : 'No aparecerá en los formularios',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  value: _activa,
-                  onChanged: (value) {
-                    setState(() {
-                      _activa = value;
-                    });
-                  },
-                  contentPadding: EdgeInsets.zero,
+              // Campo: Activa
+              Container(
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                SizedBox(height: 24),
-
-                // Botones
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Row(
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Cancelar'),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Empresa activa',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            _activa
+                                ? 'Aparecerá en los formularios de gastos'
+                                : 'No aparecerá en los formularios',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _guardar,
-                      child: Text(_isEditMode ? 'Actualizar' : 'Crear'),
+                    Switch(
+                      value: _activa,
+                      onChanged: (value) {
+                        setState(() {
+                          _activa = value;
+                        });
+                      },
+                      activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+                      activeThumbColor: AppColors.primary,
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: AppSpacing.xl),
+
+              // Botones
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: BorderSide(color: AppColors.textLight),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text('Cancelar'),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _guardar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textOnPrimary,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text(_isEditMode ? 'Actualizar' : 'Crear'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
