@@ -13,6 +13,7 @@ import 'presentation/screens/recurrentes/confirmar_instancia_screen.dart';
 import 'domain/services/notification_service.dart';
 import 'domain/services/recurrentes_background_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'core/theme/app_theme.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,7 +73,7 @@ class MyApp extends StatelessWidget {
         title: 'Gestor Gastos',
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
-        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+        theme: AppTheme.lightTheme,
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
