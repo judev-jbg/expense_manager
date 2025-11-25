@@ -17,7 +17,7 @@ class CustomBottomNav extends StatelessWidget {
       width: 200.0,
       margin: EdgeInsets.symmetric(
         vertical: AppSpacing.md,
-        horizontal: AppSpacing.lg * 2,
+        horizontal: AppSpacing.lg * 3,
       ),
       decoration: BoxDecoration(
         color: AppColors.primaryDark,
@@ -32,12 +32,12 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.sm,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _NavItem(
               icon: Icons.dashboard_outlined,
