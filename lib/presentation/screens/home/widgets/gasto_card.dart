@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../agregar_gasto/agregar_gasto_screen.dart';
 import '../../../../data/models/gasto_con_detalles_model.dart';
+import '../../../../data/models/adjunto_model.dart';
 import '../../../bloc/gastos/gastos_bloc.dart';
 import '../../../bloc/gastos/gastos_event.dart';
 import '../../../../data/repositories/gastos_repository_impl.dart';
@@ -39,7 +41,8 @@ class GastoCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () async {
+          onTap: () => _mostrarDetalleGasto(context),
+          onDoubleTap: () async {
             await Navigator.push(
               context,
               MaterialPageRoute(
@@ -204,6 +207,502 @@ class GastoCard extends StatelessWidget {
     } catch (e) {
       return 0;
     }
+  }
+
+  void _mostrarDetalleGasto(BuildContext context) async {
+    final gasto = gastoConDetalles.gasto;
+    final repository = GastosRepositoryImpl();
+    final adjuntos = await repository.getAdjuntosPorGasto(gasto.id);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext bottomSheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xl),
+            ),
+          ),
+          padding: EdgeInsets.all(AppSpacing.lg),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: EdgeInsets.only(bottom: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.textLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Header con título
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Detalle del gasto',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: AppColors.textSecondary),
+                    onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.lg),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nombre del gasto
+                      _buildDetailRow(
+                        icon: Icons.receipt_long,
+                        label: 'Nombre',
+                        value: gasto.nombre,
+                      ),
+                      SizedBox(height: AppSpacing.md),
+
+                      // Importe
+                      _buildDetailRow(
+                        icon: Icons.euro,
+                        label: 'Importe',
+                        value: '€ ${gasto.importe.toStringAsFixed(2)}',
+                      ),
+                      SizedBox(height: AppSpacing.md),
+
+                      // Fecha
+                      _buildDetailRow(
+                        icon: Icons.calendar_today,
+                        label: 'Fecha',
+                        value: DateFormat('dd/MM/yyyy').format(gasto.fecha),
+                      ),
+                      SizedBox(height: AppSpacing.md),
+
+                      // Categoría y Empresa
+                      _buildDetailRow(
+                        icon: Icons.category,
+                        label: 'Categoría',
+                        value: gastoConDetalles.empresaNombre != null
+                            ? '${gastoConDetalles.categoriaNombre} - ${gastoConDetalles.empresaNombre}'
+                            : gastoConDetalles.categoriaNombre,
+                      ),
+                      SizedBox(height: AppSpacing.md),
+
+                      // Notas (solo si existen)
+                      if (gasto.notas != null && gasto.notas!.isNotEmpty) ...[
+                        _buildNotasSection(gasto.notas!),
+                        SizedBox(height: AppSpacing.md),
+                      ],
+
+                      // Adjuntos (solo si existen)
+                      if (adjuntos.isNotEmpty) ...[
+                        _buildAdjuntosSection(context, adjuntos),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              SizedBox(height: AppSpacing.md),
+
+              // Botón de editar
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.of(bottomSheetContext).pop();
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AgregarGastoScreen(gastoParaEditar: gasto),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                  icon: Icon(Icons.edit),
+                  label: Text('Editar gasto'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotasSection(String notas) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.note_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Text(
+                'Notas',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            notas,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdjuntosSection(BuildContext context, List<AdjuntoModel> adjuntos) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.attach_file,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Text(
+              'Adjuntos (${adjuntos.length})',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.sm),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 1,
+          ),
+          itemCount: adjuntos.length,
+          itemBuilder: (context, index) {
+            final adjunto = adjuntos[index];
+            return _buildAdjuntoThumbnail(context, adjunto);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdjuntoThumbnail(BuildContext context, AdjuntoModel adjunto) {
+    return GestureDetector(
+      onTap: () => _previsualizarAdjunto(context, adjunto),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: AppColors.textLight.withValues(alpha: 0.3),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: adjunto.esImagen
+              ? Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(adjunto.rutaLocal),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: AppColors.textLight,
+                          ),
+                        );
+                      },
+                    ),
+                    // Overlay sutil para indicar que es tocable
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.1),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Container(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.picture_as_pdf,
+                        size: 32,
+                        color: AppColors.error,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'PDF',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.error,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        adjunto.tamanioFormateado,
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  void _previsualizarAdjunto(BuildContext context, AdjuntoModel adjunto) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header con título y botón cerrar
+              Container(
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.lg),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        adjunto.nombreArchivo,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: AppColors.textSecondary),
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contenido
+              Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(AppRadius.lg),
+                  ),
+                ),
+                child: adjunto.esImagen
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(AppRadius.lg),
+                        ),
+                        child: InteractiveViewer(
+                          child: Image.file(
+                            File(adjunto.rutaLocal),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                padding: EdgeInsets.all(AppSpacing.xl),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 64,
+                                      color: AppColors.textLight,
+                                    ),
+                                    SizedBox(height: AppSpacing.md),
+                                    Text(
+                                      'No se pudo cargar la imagen',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      )
+                    : Container(
+                        padding: EdgeInsets.all(AppSpacing.xl),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.picture_as_pdf,
+                              size: 64,
+                              color: AppColors.error,
+                            ),
+                            SizedBox(height: AppSpacing.md),
+                            Text(
+                              adjunto.nombreArchivo,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: AppSpacing.xs),
+                            Text(
+                              adjunto.tamanioFormateado,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Vista previa de PDF no disponible',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _mostrarBottomSheetEliminar(BuildContext context, String gastoId) {
