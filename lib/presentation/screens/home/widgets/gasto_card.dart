@@ -43,7 +43,8 @@ class GastoCard extends StatelessWidget {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AgregarGastoScreen(gastoParaEditar: gasto),
+                builder: (context) =>
+                    AgregarGastoScreen(gastoParaEditar: gasto),
               ),
             );
           },
@@ -85,8 +86,12 @@ class GastoCard extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.sm,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -123,12 +128,27 @@ class GastoCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 2),
-                      Text(
-                        fechaFormateada,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textLight,
-                        ),
+                      Row(
+                        children: [
+                          if (gastoConDetalles.empresaNombre != null) ...[
+                            Text(
+                              '${gastoConDetalles.empresaNombre} -',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textLight,
+                              ),
+                            ),
+                            SizedBox(width: 3),
+                          ],
+
+                          Text(
+                            fechaFormateada,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -136,7 +156,7 @@ class GastoCard extends StatelessWidget {
 
                 // Importe
                 Text(
-                  '€ ${gasto.importe.toStringAsFixed(0)}',
+                  '€ ${gasto.importe.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -157,7 +177,7 @@ class GastoCard extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         gradient: isRecurrente
-            ? AppColors.accentGradient
+            ? AppColors.accentGradient.withOpacity(0.3)
             : LinearGradient(
                 colors: [
                   AppColors.primary.withValues(alpha: 0.2),
@@ -169,8 +189,8 @@ class GastoCard extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isRecurrente ? Icons.sync : Icons.sync,
-        color: isRecurrente ? AppColors.textOnPrimary : AppColors.accent,
+        isRecurrente ? Icons.repeat_outlined : Icons.receipt_long,
+        color: isRecurrente ? AppColors.accent : AppColors.primary,
         size: 24,
       ),
     );
@@ -236,9 +256,7 @@ class GastoCard extends StatelessWidget {
               Text(
                 '¿Estás seguro de que deseas eliminar este gasto?',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               SizedBox(height: AppSpacing.lg),
               Row(
@@ -263,7 +281,9 @@ class GastoCard extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        context.read<GastosBloc>().add(DeleteGasto(id: gastoId));
+                        context.read<GastosBloc>().add(
+                          DeleteGasto(id: gastoId),
+                        );
                         Navigator.of(bottomSheetContext).pop();
                       },
                       style: ElevatedButton.styleFrom(

@@ -8,7 +8,7 @@ class AppColors {
   static const Color accent = Color(0xFFFF6738);
 
   // Fondos
-  static const Color background = Color(0xFFF5F5F5);
+  static const Color background = Color(0xFFFAFAFA);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = Color(0xFFF8F8F8);
 
@@ -117,7 +117,10 @@ class AppTheme {
         unselectedItemColor: AppColors.textOnPrimary.withValues(alpha: 0.5),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        selectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         unselectedLabelStyle: TextStyle(fontSize: 12),
       ),
 
@@ -139,9 +142,7 @@ class AppTheme {
 
       // TextButton Theme
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-        ),
+        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
       ),
 
       // InputDecoration Theme
