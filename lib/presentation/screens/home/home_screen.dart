@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Column(
                         children: [
                           // Espacio para la mitad superior del card
-                          SizedBox(height: 80),
+                          SizedBox(height: 70),
                           // Sección principal con fondo claro y esquinas redondeadas
                           Expanded(
                             child: Container(
@@ -105,8 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Card flotante del total
                       Positioned(
                         top: 0,
-                        left: AppSpacing.lg,
-                        right: AppSpacing.lg,
+                        left: AppSpacing.lg * 3,
+                        right: AppSpacing.lg * 3,
                         child: _buildTotalCard(),
                       ),
                     ],
