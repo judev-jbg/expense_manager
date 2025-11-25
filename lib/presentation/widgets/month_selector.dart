@@ -49,7 +49,8 @@ class _MonthSelectorState extends State<MonthSelector> {
     if (selectedIndex != -1 && _scrollController.hasClients) {
       final itemWidth = 80.0;
       final screenWidth = MediaQuery.of(context).size.width;
-      final offset = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+      final offset =
+          (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
       _scrollController.animateTo(
         offset.clamp(0, _scrollController.position.maxScrollExtent),
         duration: Duration(milliseconds: 300),
@@ -81,10 +82,14 @@ class _MonthSelectorState extends State<MonthSelector> {
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
         itemCount: _months.length,
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
         itemBuilder: (context, index) {
           final item = _months[index];
-          final isSelected = item.month == widget.selectedMonth &&
+          final isSelected =
+              item.month == widget.selectedMonth &&
               item.year == widget.selectedYear;
 
           return GestureDetector(
@@ -97,17 +102,35 @@ class _MonthSelectorState extends State<MonthSelector> {
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: isSelected
                     ? null
-                    : Border.all(color: AppColors.textLight.withValues(alpha: 0.2)),
+                    : Border.all(
+                        color: AppColors.textLight.withValues(alpha: 0.2),
+                      ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ]
+                    : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    DateFormat('MMM', 'es_ES').format(DateTime(item.year, item.month)).toUpperCase(),
+                    DateFormat(
+                      'MMM',
+                      'es_ES',
+                    ).format(DateTime(item.year, item.month)).toUpperCase(),
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                     ),
                   ),
                   SizedBox(height: 2),
@@ -115,7 +138,9 @@ class _MonthSelectorState extends State<MonthSelector> {
                     '${item.year}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isSelected ? AppColors.primary : AppColors.textLight,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textLight,
                     ),
                   ),
                 ],
