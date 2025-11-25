@@ -51,6 +51,7 @@ class YearlySummaryCard extends StatelessWidget {
                     icon: Icons.calendar_month,
                     label: 'Promedio mensual',
                     value: '€${promedioMensual.toStringAsFixed(2)}',
+                    subtitle: ' ',
                     color: Colors.green,
                   ),
                 ),

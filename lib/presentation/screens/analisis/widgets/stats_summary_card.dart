@@ -39,10 +39,7 @@ class StatsSummaryCard extends StatelessWidget {
           // Total del mes
           Text(
             'Total del mes',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           SizedBox(height: AppSpacing.xs),
           Text(
@@ -50,7 +47,7 @@ class StatsSummaryCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Colors.blue.shade900,
             ),
           ),
           SizedBox(height: AppSpacing.md),
@@ -62,67 +59,74 @@ class StatsSummaryCard extends StatelessWidget {
             children: [
               // Promedio diario
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Promedio diario',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '€ ${promedioDiario.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                child: _buildStatItem(
+                  icon: Icons.calendar_month,
+                  label: 'Promedio diario',
+                  value: '€ ${promedioDiario.toStringAsFixed(2)}',
+                  subtitle: ' ',
+                  color: Colors.green,
                 ),
               ),
 
               // Mayor gasto
               if (mayorGastoNombre != null && mayorGastoImporte != null)
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Mayor gasto',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '€ ${mayorGastoImporte!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        mayorGastoNombre!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: _buildStatItem(
+                    icon: Icons.trending_up,
+                    label: 'Mayor gasto',
+                    value: '€${mayorGastoImporte!.toStringAsFixed(2)}',
+                    subtitle: mayorGastoNombre,
+                    color: Colors.orange,
                   ),
                 ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    String? subtitle,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        if (subtitle != null) ...[
+          SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 }
