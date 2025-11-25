@@ -14,7 +14,11 @@ class CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(AppSpacing.md),
+      width: 200.0,
+      margin: EdgeInsets.symmetric(
+        vertical: AppSpacing.md,
+        horizontal: AppSpacing.lg * 2,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primaryDark,
         borderRadius: BorderRadius.circular(AppRadius.full),
@@ -28,24 +32,25 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
+          horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _NavItem(
-              icon: Icons.access_time,
+              icon: Icons.dashboard_outlined,
               isSelected: currentIndex == 0,
               onTap: () => onTap(0),
             ),
             _NavItem(
-              icon: Icons.credit_card,
+              icon: Icons.credit_card_outlined,
               isSelected: currentIndex == 1,
               onTap: () => onTap(1),
             ),
             _NavItem(
-              icon: Icons.sync,
+              icon: Icons.repeat_outlined,
               isSelected: currentIndex == 2,
               onTap: () => onTap(2),
             ),
@@ -78,11 +83,7 @@ class _NavItem extends StatelessWidget {
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.full),
         ),
-        child: Icon(
-          icon,
-          color: AppColors.textOnPrimary,
-          size: 24,
-        ),
+        child: Icon(icon, color: AppColors.textOnPrimary, size: 24),
       ),
     );
   }
